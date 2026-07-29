@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vlog Creator Workbench | Vlog 创作工作台</title>
+<style>
+:root {
+  --bg-primary: #0a1929;
+  --bg-secondary: #102a43;
+  --bg-card: #1a3a5c;
+  --bg-hover: #243b53;
+  --bg-input: #0d1f30;
+  --accent: #00d4ff;
+  --accent-dim: #0284c7;
+  --accent-glow: rgba(0, 212, 255, 0.15);
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --purple: #a78bfa;
+  --pink: #f472b6;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: #1e3a5f;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.08);
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(0, 212, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(167, 139, 250, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-shell { display: flex; height: 100vh; position: relative; z-index: 1; }
+
+/* ========== Workspace Switcher (far left) ========== */
+.workspace-bar {
+  width: 64px;
+  background: #06131f;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.ws-btn {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.ws-btn:hover { background: var(--bg-hover); transform: scale(1.05); }
+
+.ws-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.ws-btn .ws-label {
+  position: absolute;
+  left: 56px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 200;
+}
+
+.ws-btn:hover .ws-label { opacity: 1; }
+
+.ws-divider { width: 32px; height: 1px; background: var(--border); margin: 4px 0; }
+
+.ws-add {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 20px;
+  transition: all var(--transition);
+}
+
+.ws-add:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ========== Sidebar ========== */
+.sidebar {
+  width: 220px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.3s;
+}
+
+.sidebar-header {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header h1 {
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar-header .ws-name {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.sidebar-header .ws-name-en {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav-list { list-style: none; padding: 10px; flex: 1; overflow-y: auto; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  margin-bottom: 3px;
+  font-size: 13px;
+  position: relative;
+}
+
+.nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.nav-item.active {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 60%;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+
+.nav-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+.nav-label-en { font-size: 9px; color: var(--text-muted); margin-left: auto; text-transform: uppercase; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+}
+
+.sb-btn {
+  flex: 1;
+  padding: 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.sb-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent-dim); }
+
+/* ========== Main ========== */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.content-header {
+  padding: 20px 32px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.content-header h2 { font-size: 22px; font-weight: 700; }
+.content-header .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.content-body { flex: 1; overflow-y: auto; padding: 24px 32px; }
+
+/* ========== Buttons ========== */
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dim)); color: #001220; }
+.btn-primary:hover { box-shadow: 0 0 16px var(--accent-glow); transform: translateY(-1px); }
+.btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg-hover); border-color: var(--accent-dim); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+.btn-danger:hover { background: rgba(248,113,113,0.1); }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+
+/* ========== Dashboard ========== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition);
+}
+
+.stat-card:hover { border-color: var(--accent-dim); box-shadow: var(--shadow-glow); transform: translateY(-2px); }
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: -16px; right: -16px;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  opacity: 0.05;
+}
+
+.stat-card[data-color="accent"]::after { background: var(--accent); }
+.stat-card[data-color="success"]::after { background: var(--success); }
+.stat-card[data-color="warning"]::after { background: var(--warning); }
+.stat-card[data-color="purple"]::after { background: var(--purple); }
+
+.stat-icon { font-size: 24px; margin-bottom: 8px; }
+.stat-value { font-size: 30px; font-weight: 800; line-height: 1; }
+.stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.stat-label-en { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+
+.dash-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title .en { font-size: 10px; color: var(--text-muted); font-weight: 400; text-transform: uppercase; }
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.activity-item:last-child { border-bottom: none; }
+.activity-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-bottom: 6px;
+}
+
+.quick-action:hover { border-color: var(--accent-dim); background: var(--bg-hover); }
+.quick-action-icon { font-size: 18px; }
+.quick-action-text { flex: 1; }
+.quick-action-title { font-size: 12px; font-weight: 600; }
+.quick-action-desc { font-size: 10px; color: var(--text-muted); }
+
+/* ========== Kanban ========== */
+.kanban-board { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; min-height: 400px; }
+
+.kanban-column {
+  min-width: 250px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+}
+
+.kanban-column-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kanban-column-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.kanban-column-title .en { font-size: 9px; color: var(--text-muted); font-weight: 400; }
+
+.column-badge {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.kanban-column-body { padding: 10px; flex: 1; overflow-y: auto; min-height: 80px; }
+.kanban-column-body.drag-over { background: var(--accent-glow); }
+
+.project-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: all var(--transition);
+}
+
+.project-card:hover { border-color: var(--accent-dim); box-shadow: var(--shadow); }
+.project-card.dragging { opacity: 0.5; cursor: grabbing; }
+
+.project-card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.project-card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+.tag { font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.tag-port { background: rgba(0, 212, 255, 0.15); color: var(--accent); }
+.tag-date { background: rgba(148, 163, 184, 0.15); color: var(--text-secondary); }
+
+.progress-bar { width: 100%; height: 3px; background: var(--bg-input); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+
+.card-actions { display: flex; gap: 4px; margin-top: 8px; opacity: 0; transition: opacity 0.2s; }
+.project-card:hover .card-actions { opacity: 1; }
+
+.empty-column { text-align: center; color: var(--text-muted); font-size: 11px; padding: 30px 0; }
+
+/* ========== Table ========== */
+.toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+
+.search-box { flex: 1; min-width: 180px; position: relative; }
+
+.search-box input {
+  width: 100%;
+  padding: 8px 14px 8px 34px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.search-box input:focus { outline: none; border-color: var(--accent); }
+
+.search-box::before {
+  content: '🔍';
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+}
+
+.filter-select {
+  padding: 8px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.filter-select option { background: var(--bg-secondary); }
+
+.table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
+
+.data-table { width: 100%; border-collapse: collapse; }
+
+.data-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table th .en { display: block; font-size: 9px; color: var(--text-muted); font-weight: 400; }
+
+.data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.data-table tr:hover td { background: var(--bg-hover); }
+
+.status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+.status-raw { background: rgba(248,113,113,0.15); color: var(--danger); }
+.status-sorted { background: rgba(251,191,36,0.15); color: var(--warning); }
+.status-archived { background: rgba(74,222,128,0.15); color: var(--success); }
+
+.type-icon { font-size: 14px; }
+
+.row-actions { display: flex; gap: 4px; }
+
+.icon-btn {
+  width: 26px; height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent-dim); }
+.icon-btn.delete:hover { color: var(--danger); border-color: var(--danger); }
+
+.empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+.empty-state-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
+
+/* ========== Calendar ========== */
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+.calendar-header { background: var(--bg-secondary); padding: 8px; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+
+.calendar-cell { background: var(--bg-card); min-height: 80px; padding: 6px; font-size: 11px; position: relative; transition: background var(--transition); }
+.calendar-cell:hover { background: var(--bg-hover); }
+.calendar-cell.empty { background: var(--bg-secondary); opacity: 0.5; }
+.calendar-cell.today { background: var(--accent-glow); }
+.calendar-day { font-weight: 700; margin-bottom: 3px; }
+
+.calendar-event {
+  background: var(--accent-dim);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-event.published { background: var(--success); color: #001220; }
+.calendar-event.planned { background: var(--warning); color: #001220; }
+.calendar-event.shoot { background: var(--purple); }
+
+/* ========== Port Archive ========== */
+.port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+.port-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+
+.port-card:hover { border-color: var(--accent-dim); box-shadow: var(--shadow-glow); transform: translateY(-2px); }
+
+.port-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.port-name { font-size: 16px; font-weight: 700; }
+.port-country { font-size: 11px; color: var(--text-muted); }
+.port-info { font-size: 12px; color: var(--text-secondary); line-height: 1.7; }
+.port-info strong { color: var(--text-primary); font-weight: 600; }
+
+.port-stats { display: flex; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.port-stat { text-align: center; flex: 1; }
+.port-stat-value { font-size: 18px; font-weight: 700; color: var(--accent); }
+.port-stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; }
+
+/* ========== Notes ========== */
+.note-input { display: flex; gap: 8px; margin-bottom: 16px; }
+
+.note-input input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.note-input input:focus { outline: none; border-color: var(--accent); }
+
+.notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+.note-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  transition: all var(--transition);
+}
+
+.note-card:hover { border-color: var(--accent-dim); box-shadow: var(--shadow); }
+
+.note-text { font-size: 13px; line-height: 1.5; margin-bottom: 8px; word-break: break-word; }
+
+.note-meta { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); }
+
+.note-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; }
+.note-delete:hover { color: var(--danger); }
+
+/* ========== Strategy Page (Black Mountain) ========== */
+.strategy-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.strategy-section h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strategy-section h3 .en { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+.strategy-list { list-style: none; }
+
+.strategy-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.strategy-list li:last-child { border-bottom: none; }
+.strategy-list li strong { color: var(--text-primary); }
+
+.topic-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: all var(--transition);
+}
+
+.topic-card:hover { border-color: var(--accent-dim); }
+
+.topic-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+.topic-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #001220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.topic-title { font-size: 13px; font-weight: 600; }
+
+.topic-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 6px; }
+
+.topic-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.gear-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+
+.gear-item {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+
+.gear-icon { font-size: 24px; margin-bottom: 6px; }
+.gear-name { font-size: 12px; font-weight: 600; }
+.gear-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+/* ========== Modal ========== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-title .en { font-size: 11px; color: var(--text-muted); font-weight: 400; display: block; }
+.modal-close { background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; width: 30px; height: 30px; border-radius: 6px; transition: all var(--transition); display: flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.modal-body { padding: 22px; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--text-secondary); }
+.form-group label .en { font-size: 10px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+.form-group textarea { resize: vertical; min-height: 70px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ========== Toast ========== */
+.toast {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 13px;
+  box-shadow: var(--shadow);
+  z-index: 300;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* Pages */
+.page { display: none; animation: fadeIn 0.3s ease; height: 100%; }
+.page.active { display: flex; flex-direction: column; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- ========== Workspace Bar ========== -->
+  <div class="workspace-bar" id="workspaceBar"></div>
+
+  <!-- ========== Sidebar ========== -->
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <!-- ========== Main ========== -->
+  <main class="main" id="mainContent"></main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   Vlog Creator Workbench - Desktop Edition
+   Multi-workspace architecture
+   ================================================================ */
+
+const STORAGE_KEY = 'vlog_workbench_v2';
+
+// ========== Workspaces Definition ==========
+const defaultWorkspaces = [
+  {
+    id: 'star',
+    icon: '🚢',
+    name: '星际号航线',
+    nameEn: 'Star of the Seas',
+    color: 'accent',
+    data: {
+      projects: [
+        { id: 'sp1', title: '卡纳维拉尔港启航', titleEn: 'Port Canaveral Departure', port: '卡纳维拉尔港 Port Canaveral', stage: 'editing', progress: 60, deadline: '2026-08-05', platform: 'YouTube+B站', note: '日落启航延时 + 船上第一夜' },
+        { id: 'sp2', title: '可可岛完美假日', titleEn: 'Perfect Day CocoCay', port: '可可岛 Perfect Day CocoCay', stage: 'shooting', progress: 35, deadline: '2026-08-12', platform: '抖音+YouTube Shorts', note: '水上乐园GoPro第一视角 + 沙滩航拍' },
+        { id: 'sp3', title: '科苏梅尔水下世界', titleEn: 'Cozumel Underwater World', port: '科苏梅尔 Cozumel', stage: 'idea', progress: 5, deadline: '2026-08-20', platform: 'YouTube', note: '浮潜水下拍摄 + 图伦遗址半日游' },
+        { id: 'sp4', title: '海上日挑战王者之巅', titleEn: 'Crown's Edge Challenge', port: '海上航行 Sea Day', stage: 'idea', progress: 0, deadline: '2026-08-25', platform: '抖音+小红书', note: '47米高挑战第一视角，制造紧张感' },
+        { id: 'sp5', title: '7天航程混剪', titleEn: '7-Day Cruise Edit', port: '全程 Full Route', stage: 'idea', progress: 0, deadline: '2026-09-01', platform: 'YouTube+B站', note: '航程精华混剪，配节奏感BGM' },
+      ],
+      materials: [
+        { id: 'sm1', type: 'video', title: '启航延时4K', port: '卡纳维拉尔港 Port Canaveral', date: '2026-07-24', duration: '8分钟', status: 'sorted', note: '日落时段，金色光线' },
+        { id: 'sm2', type: 'video', title: '船上设施B-roll', port: '海上航行 Sea Day', date: '2026-07-25', duration: '15分钟', status: 'raw', note: '泳池/餐厅/娱乐设施' },
+        { id: 'sm3', type: 'photo', title: '可可岛沙滩照片', port: '可可岛 Perfect Day CocoCay', date: '2026-07-26', duration: '60张', status: 'raw', note: '含航拍20张' },
+      ],
+      ports: getStarPorts(),
+      notes: [
+        { id: 'sn1', text: '船上拍摄注意稳定器防风，海面风大容易抖', ts: Date.now() - 86400000 },
+        { id: 'sn2', text: '可可岛水上滑道用GoPro防护壳，防盐水腐蚀', ts: Date.now() - 86400000*2 },
+        { id: 'sn3', text: '海上日出要提前查日出时间，甲板占位', ts: Date.now() - 86400000*3 },
+      ],
+      calendarEvents: [
+        { id: 'sc1', date: getDateString(new Date()), title: '启航视频剪辑截止', type: 'planned' },
+        { id: 'sc2', date: '2026-08-12', title: '可可岛视频发布', type: 'planned' },
+        { id: 'sc3', date: '2026-08-05', title: '启航视频发布', type: 'planned' },
+      ]
+    }
+  },
+  {
+    id: 'montenegro',
+    icon: '🎬',
+    name: '黑山短视频',
+    nameEn: 'Montenegro Shorts',
+    color: 'purple',
+    data: {
+      projects: [
+        { id: 'mp1', title: '黑山第一支：我为什么来', titleEn: 'Ep1: Why Montenegro', port: '科托尔 Kotor', stage: 'shooting', progress: 20, deadline: '2026-07-30', platform: '抖音+小红书', note: '开场建立人设：船员+黑山+短视频新手' },
+        { id: 'mp2', title: '科托尔老城漫步', titleEn: 'Ep2: Kotor Old Town Walk', port: '科托尔 Kotor', stage: 'idea', progress: 5, deadline: '2026-08-03', platform: '抖音+YouTube Shorts', note: '第一视角漫步+中英双语旁白' },
+        { id: 'mp3', title: '黑山美食初体验', titleEn: 'Ep3: Montenegro Food', port: '科托尔 Kotor', stage: 'idea', progress: 0, deadline: '2026-08-08', platform: '抖音+小红书', note: '海鲜/巴尔干烤肉/当地咖啡文化' },
+        { id: 'mp4', title: '科托尔湾日落', titleEn: 'Ep4: Bay of Kotor Sunset', port: '科托尔 Kotor', stage: 'idea', progress: 0, deadline: '2026-08-12', platform: '抖音+YouTube Shorts', note: '爬城墙拍湾景日落，配舒缓BGM' },
+        { id: 'mp5', title: '船上生活vlog', titleEn: 'Ep5: Life on Board', port: '海上 Sea', stage: 'idea', progress: 0, deadline: '2026-08-15', platform: '抖音+小红书', note: '工作日常+靠港对比，制造反差感' },
+      ],
+      materials: [
+        { id: 'mm1', type: 'video', title: '科托尔老城空镜', port: '科托尔 Kotor', date: '2026-07-25', duration: '20分钟', status: 'raw', note: '刚拍，还没整理' },
+        { id: 'mm2', type: 'photo', title: '科托尔湾照片', port: '科托尔 Kotor', date: '2026-07-25', duration: '30张', status: 'raw', note: '含城墙俯瞰5张' },
+      ],
+      ports: getMontenegroPorts(),
+      notes: [
+        { id: 'mn1', text: '起步阶段保持日更或隔日更，养号期先发10条', ts: Date.now() - 3600000 },
+        { id: 'mn2', text: '科托尔老城石板路多，稳定器调好步行模式', ts: Date.now() - 7200000 },
+        { id: 'mn3', text: '双语字幕用剪映自动识别再手动校对，效率高', ts: Date.now() - 86400000 },
+        { id: 'mn4', text: '前3秒必须抓人：用疑问句/反差/美景开场', ts: Date.now() - 86400000*2 },
+      ],
+      calendarEvents: [
+        { id: 'mc1', date: '2026-07-30', title: '第一支视频发布', type: 'planned' },
+        { id: 'mc2', date: '2026-08-03', title: '老城漫步发布', type: 'planned' },
+      ]
+    }
+  }
+];
+
+function getStarPorts() {
+  return [
+    { id: 'stp1', name: '卡纳维拉尔港 Port Canaveral', country: '美国 USA', visitDate: '2026-07-24', bestTime: '日落启航', spots: '码头观景台、肯尼迪航天中心远眺', tips: '启航时拍船尾白浪延时，甲板拍日落', materialCount: 1, projectCount: 1 },
+    { id: 'stp2', name: '海上航行 Sea Day', country: '公海 Open Sea', visitDate: '2026-07-25', bestTime: '日出/全天', spots: '甲板、泳池区、餐厅、娱乐设施', tips: '拍船上生活全貌，王者之巅挑战47米高第一视角', materialCount: 1, projectCount: 1 },
+    { id: 'stp3', name: '科斯塔玛雅 Costa Maya', country: '墨西哥 Mexico', visitDate: '2026-07-26', bestTime: '上午', spots: '玛雅遗址、大玛雅礁浮潜', tips: '遗址用广角，浮潜用GoPro', materialCount: 0, projectCount: 0 },
+    { id: 'stp4', name: '罗阿坦 Roatan', country: '洪都拉斯 Honduras', visitDate: '2026-07-27', bestTime: '全天', spots: '世界第二大堡礁、热带雨林', tips: '水下拍摄是亮点，带防水壳', materialCount: 0, projectCount: 0 },
+    { id: 'stp5', name: '科苏梅尔 Cozumel', country: '墨西哥 Mexico', visitDate: '2026-07-28', bestTime: '上午', spots: 'Chankanaab水下公园、图伦遗址', tips: '浮潜+遗址组合，一天两拍', materialCount: 0, projectCount: 1 },
+    { id: 'stp6', name: '可可岛 Perfect Day CocoCay', country: '巴哈马 Bahamas', visitDate: '2026-07-29', bestTime: '全天', spots: '水上乐园、悬浮泳池、气球滑道、私人沙滩', tips: 'GoPro第一视角拍滑道，航拍拍岛全景', materialCount: 1, projectCount: 1 },
+    { id: 'stp7', name: '夏洛特阿马利亚 Charlotte Amalie', country: '美属维尔京群岛 USVI', visitDate: '2026-08-10', bestTime: '上午', spots: '蔗糖岛海滩、加勒比风情街', tips: '东加勒比航线停靠，拍加勒比色彩建筑', materialCount: 0, projectCount: 0 },
+    { id: 'stp8', name: '巴斯特尔 Basseterre', country: '圣基茨和尼维斯 St. Kitts', visitDate: '2026-08-11', bestTime: '上午', spots: '火山岛远景、殖民建筑', tips: '东加勒比航线，拍火山岛独特地貌', materialCount: 0, projectCount: 0 },
+  ];
+}
+
+function getMontenegroPorts() {
+  return [
+    { id: 'mtp1', name: '科托尔 Kotor', country: '黑山 Montenegro', visitDate: '2026-07-25', bestTime: '日出/日落', spots: '老城、城墙、圣乔凡尼堡垒、科托尔湾', tips: '爬城墙拍湾景日落是必拍机位，老城石板路适合漫步第一视角', materialCount: 2, projectCount: 4 },
+    { id: 'mtp2', name: '布德瓦 Budva', country: '黑山 Montenegro', visitDate: '待定 TBD', bestTime: '傍晚', spots: '老城、莫格伦海滩、Sveti Stefan岛', tips: '海滩+老城组合，Sveti Stefan远眺机位', materialCount: 0, projectCount: 0 },
+    { id: 'mtp3', name: '蒂瓦特 Tivat', country: '黑山 Montenegro', visitDate: '待定 TBD', bestTime: '白天', spots: 'Porto Montenegro码头、Luxury游艇', tips: '高端码头氛围，拍游艇+海岸线', materialCount: 0, projectCount: 0 },
+    { id: 'mtp4', name: '佩拉斯特 Perast', country: '黑山 Montenegro', visitDate: '待定 TBD', bestTime: '上午', spots: '圣母岩岛、圣乔治岛、海滨大道', tips: '坐船去圣母岩岛拍，水上教堂很出片', materialCount: 0, projectCount: 0 },
+    { id: 'mtp5', name: '杜尔米托尔 Durmitor', country: '黑山 Montenegro', visitDate: '待定 TBD', bestTime: '白天', spots: '黑湖、塔拉河峡谷', tips: '山区一日游，拍自然风光对比海滨', materialCount: 0, projectCount: 0 },
+  ];
+}
+
+// ========== State ==========
+let appState = {
+  workspaces: defaultWorkspaces,
+  activeWsId: 'montenegro', // default to Montenegro since user is there
+  activePage: 'dashboard',
+  currentMonth: new Date(),
+};
+
+let editingId = null;
+let dragData = null;
+
+function loadData() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try { appState = JSON.parse(saved); } catch(e) { console.error('Load failed', e); }
+  }
+  // Ensure currentMonth is a Date
+  if (typeof appState.currentMonth === 'string') appState.currentMonth = new Date(appState.currentMonth);
+  if (!appState.activeWsId) appState.activeWsId = appState.workspaces[0].id;
+  if (!appState.activePage) appState.activePage = 'dashboard';
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+}
+
+function getActiveWs() { return appState.workspaces.find(w => w.id === appState.activeWsId); }
+function getActiveData() { return getActiveWs().data; }
+
+function getDateString(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// ========== Navigation Pages ==========
+const pages = [
+  { id: 'dashboard', icon: '📊', label: '仪表盘', labelEn: 'Dashboard' },
+  { id: 'projects', icon: '📋', label: '项目看板', labelEn: 'Projects' },
+  { id: 'materials', icon: '🎬', label: '素材库', labelEn: 'Footage' },
+  { id: 'calendar', icon: '📅', label: '发布日历', labelEn: 'Calendar' },
+  { id: 'ports', icon: '⚓', label: '港口档案', labelEn: 'Ports' },
+  { id: 'notes', icon: '💡', label: '灵感速记', labelEn: 'Ideas' },
+];
+
+// Montenegro workspace gets extra strategy page
+function getPages() {
+  const ws = getActiveWs();
+  if (ws.id === 'montenegro') {
+    return [
+      { id: 'dashboard', icon: '📊', label: '仪表盘', labelEn: 'Dashboard' },
+      { id: 'strategy', icon: '🗺️', label: '起步策略', labelEn: 'Strategy' },
+      ...pages.slice(1),
+    ];
+  }
+  return pages;
+}
+
+// ========== Render Workspace Bar ==========
+function renderWorkspaceBar() {
+  const bar = document.getElementById('workspaceBar');
+  bar.innerHTML = appState.workspaces.map(ws => `
+    <div class="ws-btn ${ws.id === appState.activeWsId ? 'active' : ''}" onclick="switchWorkspace('${ws.id}')">
+      ${ws.icon}
+      <span class="ws-label">${ws.name} · ${ws.nameEn}</span>
+    </div>
+  `).join('') + `
+    <div class="ws-divider"></div>
+    <button class="ws-add" onclick="addWorkspace()" title="新增工作区">+</button>
+  `;
+}
+
+function switchWorkspace(id) {
+  appState.activeWsId = id;
+  appState.activePage = 'dashboard';
+  saveData();
+  renderAll();
+}
+
+// ========== Render Sidebar ==========
+function renderSidebar() {
+  const ws = getActiveWs();
+  const pageList = getPages();
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = `
+    <div class="sidebar-header">
+      <h1>🎬 Vlog Workbench</h1>
+      <div class="ws-name">${ws.icon} ${ws.name}</div>
+      <div class="ws-name-en">${ws.nameEn}</div>
+    </div>
+    <ul class="nav-list">
+      ${pageList.map(p => `
+        <li class="nav-item ${p.id === appState.activePage ? 'active' : ''}" onclick="switchPage('${p.id}')">
+          <span class="nav-icon">${p.icon}</span>
+          <span>${p.label}</span>
+          <span class="nav-label-en">${p.labelEn}</span>
+        </li>
+      `).join('')}
+    </ul>
+    <div class="sidebar-footer">
+      <button class="sb-btn" onclick="exportData()">⬇️ 导出</button>
+      <button class="sb-btn" onclick="document.getElementById('importFile').click()">⬆️ 导入</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  `;
+}
+
+function switchPage(id) {
+  appState.activePage = id;
+  saveData();
+  renderSidebar();
+  renderMain();
+}
+
+// ========== Render Main ==========
+function renderMain() {
+  const main = document.getElementById('mainContent');
+  const page = appState.activePage;
+
+  let html = '';
+  if (page === 'dashboard') html = renderDashboardPage();
+  else if (page === 'strategy') html = renderStrategyPage();
+  else if (page === 'projects') html = renderProjectsPage();
+  else if (page === 'materials') html = renderMaterialsPage();
+  else if (page === 'calendar') html = renderCalendarPage();
+  else if (page === 'ports') html = renderPortsPage();
+  else if (page === 'notes') html = renderNotesPage();
+
+  main.innerHTML = html;
+
+  // Post-render data fills
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'projects') renderKanban();
+  if (page === 'materials') renderMaterials();
+  if (page === 'calendar') renderCalendar();
+  if (page === 'ports') renderPorts();
+  if (page === 'notes') renderNotes();
+}
+
+function renderAll() {
+  renderWorkspaceBar();
+  renderSidebar();
+  renderMain();
+}
+
+// ========== Dashboard ==========
+function renderDashboardPage() {
+  return `
+    <div class="page active">
+      <div class="content-header">
+        <div>
+          <h2>仪表盘 <span style="font-size:13px;color:var(--text-muted);font-weight:400">Dashboard</span></h2>
+          <div class="header-sub" id="todayDate"></div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" onclick="switchPage('notes')">💡 新灵感</button>
+          <button class="btn btn-primary" onclick="openProjectModal()">+ 新建项目</button>
+        </div>
+      </div>
+      <div class="content-body">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="dash-panels">
+          <div class="panel">
+            <div class="panel-title">📌 最近活动 <span class="en">Recent Activity</span></div>
+            <div id="activityList"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">⚡ 快捷操作 <span class="en">Quick Actions</span></div>
+            <div id="quickActions"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  const data = getActiveData();
+  const today = new Date();
+  const days = ['日','一','二','三','四','五','六'];
+  document.getElementById('todayDate').textContent =
+    `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日 星期${days[today.getDay()]} · ${today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'})}`;
+
+  const totalProjects = data.projects.length;
+  const editingCount = data.projects.filter(p => p.stage === 'editing' || p.stage === 'shooting').length;
+  const rawMaterials = data.materials.filter(m => m.status === 'raw').length;
+  const published = data.projects.filter(p => p.stage === 'published').length;
+
+  const stats = [
+    { icon: '📋', value: totalProjects, label: '总项目数', labelEn: 'Total Projects', color: 'accent' },
+    { icon: '🎬', value: editingCount, label: '进行中', labelEn: 'In Progress', color: 'warning' },
+    { icon: '📹', value: rawMaterials, label: '待整理素材', labelEn: 'Raw Footage', color: 'purple' },
+    { icon: '✅', value: published, label: '已发布', labelEn: 'Published', color: 'success' },
+  ];
+
+  document.getElementById('statsGrid').innerHTML = stats.map(s => `
+    <div class="stat-card" data-color="${s.color}">
+      <div class="stat-icon">${s.icon}</div>
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-label-en">${s.labelEn}</div>
+    </div>
+  `).join('');
+
+  // Activity
+  const activities = [];
+  const stageMap = { idea: '构思中', shooting: '拍摄中', editing: '剪辑中', pending: '待发布', published: '已发布' };
+  data.projects.slice().reverse().slice(0, 4).forEach(p => {
+    activities.push({ dot: 'var(--accent)', text: `「${p.title}」→ ${stageMap[p.stage]}` });
+  });
+  data.materials.slice().reverse().slice(0, 3).forEach(m => {
+    activities.push({ dot: 'var(--purple)', text: `素材：${m.title}（${m.port}）` });
+  });
+  data.notes.slice().reverse().slice(0, 2).forEach(n => {
+    activities.push({ dot: 'var(--warning)', text: `灵感：${n.text.substring(0,40)}${n.text.length>40?'...':''}` });
+  });
+
+  document.getElementById('activityList').innerHTML = activities.length
+    ? activities.map(a => `<div class="activity-item"><span class="activity-dot" style="background:${a.dot}"></span><span>${a.text}</span></div>`).join('')
+    : '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px">暂无活动</div>';
+
+  const actions = [
+    { icon: '📋', title: '新建项目', desc: 'Create Project', action: 'openProjectModal()' },
+    { icon: '🎬', title: '登记素材', desc: 'Add Footage', action: 'openMaterialModal()' },
+    { icon: '⚓', title: '新增港口', desc: 'Add Port', action: 'openPortModal()' },
+    { icon: '💡', title: '记录灵感', desc: 'Quick Note', action: "switchPage('notes')" },
+  ];
+  document.getElementById('quickActions').innerHTML = actions.map(a => `
+    <div class="quick-action" onclick="${a.action}">
+      <span class="quick-action-icon">${a.icon}</span>
+      <div class="quick-action-text"><div class="quick-action-title">${a.title}</div><div class="quick-action-desc">${a.desc}</div></div>
+      <span style="color:var(--text-muted)">›</span>
+    </div>
+  `).join('');
+}
+
+// ========== Strategy Page (Montenegro only) ==========
+function renderStrategyPage() {
+  return `
+    <div class="page active">
+      <div class="content-header">
+        <div>
+          <h2>起步策略 <span style="font-size:13px;color:var(--text-muted);font-weight:400">Strategy</span></h2>
+          <div class="header-sub">黑山短视频从0到1的完整策划 · Montenegro Shorts Launch Plan</div>
+        </div>
+      </div>
+      <div class="content-body">
+
+        <div class="strategy-section">
+          <h3>🎯 定位与人设 <span class="en">Positioning</span></h3>
+          <ul class="strategy-list">
+            <li><strong>核心人设：</strong>船员 + 黑山生活 + 短视频新手，用"新手视角"降低门槛，真实感是最大优势</li>
+            <li><strong>内容方向：</strong>黑山港口/老城/海岸/美食/船上生活，中英双语旁白+字幕</li>
+            <li><strong>差异化：</strong>大多数黑山内容是旅游博主的游客视角，你是"住在那里工作的人"，日常感+真实感</li>
+            <li><strong>目标受众：</strong>对欧洲小众旅行感兴趣的中国用户 + 学中文的外国用户（双语优势）</li>
+          </ul>
+        </div>
+
+        <div class="strategy-section">
+          <h3>📱 平台策略 <span class="en">Platform Strategy</span></h3>
+          <ul class="strategy-list">
+            <li><strong>主阵地：</strong>抖音（国内流量）+ 小红书（种草+图文补充）</li>
+            <li><strong>同步分发：</strong>YouTube Shorts（海外长尾）+ B站（深度内容沉淀）</li>
+            <li><strong>发布节奏：</strong>起步期隔日更（每周3-4条），养号2周后转日更</li>
+            <li><strong>最佳发布时间：</strong>北京时间 18:00-22:00（国内晚高峰），对应黑山时间 11:00-15:00</li>
+          </ul>
+        </div>
+
+        <div class="strategy-section">
+          <h3>🎬 第一批5个选题 <span class="en">First 5 Topics</span></h3>
+          <div class="topic-card">
+            <div class="topic-header"><div class="topic-num">1</div><div class="topic-title">我为什么在黑山拍视频 / Why Montenegro</div></div>
+            <div class="topic-desc">建立人设开场。船员身份+第一次来黑山+开始拍短视频的心路。前3秒用科托尔湾航拍/城墙俯瞰抓人。</div>
+            <div class="topic-meta"><span class="tag tag-port">⚡ 人设建立</span><span class="tag tag-date">📅 30-45秒</span></div>
+          </div>
+          <div class="topic-card">
+            <div class="topic-header"><div class="topic-num">2</div><div class="topic-title">科托尔老城漫步 / Kotor Old Town Walk</div></div>
+            <div class="topic-desc">第一视角漫步石板路，穿插老城历史小知识（中英双语）。拍猫、拍小店、拍咖啡馆。</div>
+            <div class="topic-meta"><span class="tag tag-port">🎬 沉浸式</span><span class="tag tag-date">📅 45-60秒</span></div>
+          </div>
+          <div class="topic-card">
+            <div class="topic-header"><div class="topic-num">3</div><div class="topic-title">黑山美食初体验 / Montenegro Food</div></div>
+            <div class="topic-desc">海鲜拼盘+巴尔干烤肉(Cevapi)+当地咖啡文化。吃播+反应+价格换算（欧元→人民币）。</div>
+            <div class="topic-meta"><span class="tag tag-port">🍔 美食</span><span class="tag tag-date">📅 30-45秒</span></div>
+          </div>
+          <div class="topic-card">
+            <div class="topic-header"><div class="topic-num">4</div><div class="topic-title">科托尔湾日落 / Bay of Kotor Sunset</div></div>
+            <div class="topic-desc">爬圣乔凡尼堡垒拍日落全景，配舒缓BGM。纯视觉向，测试调色风格。</div>
+            <div class="topic-meta"><span class="tag tag-port">🌅 视觉向</span><span class="tag tag-date">📅 20-30秒</span></div>
+          </div>
+          <div class="topic-card">
+            <div class="topic-header"><div class="topic-num">5</div><div class="topic-title">船上 vs 岸上 / Ship vs Shore</div></div>
+            <div class="topic-desc">对比船上工作日常和靠港游玩，制造反差。快剪节奏，两个场景来回切。</div>
+            <div class="topic-meta"><span class="tag tag-port">⚡ 反差感</span><span class="tag tag-date">📅 30-45秒</span></div>
+          </div>
+        </div>
+
+        <div class="strategy-section">
+          <h3>🎥 拍摄设备清单 <span class="en">Gear Checklist</span></h3>
+          <div class="gear-grid">
+            <div class="gear-item"><div class="gear-icon">📱</div><div class="gear-name">手机</div><div class="gear-desc">主力拍摄，起步够用</div></div>
+            <div class="gear-item"><div class="gear-icon">🤳</div><div class="gear-name">稳定器</div><div class="gear-desc">步行防抖必备</div></div>
+            <div class="gear-item"><div class="gear-icon">🎙️</div><div class="gear-name">无线麦克风</div><div class="gear-desc">户外收音，旁白录制</div></div>
+            <div class="gear-item"><div class="gear-icon">🔋</div><div class="gear-name">充电宝+备用电池</div><div class="gear-desc">一天外拍保障</div></div>
+            <div class="gear-item"><div class="gear-icon">💾</div><div class="gear-name">备用存储卡</div><div class="gear-desc">4K素材吃空间</div></div>
+            <div class="gear-item"><div class="gear-icon">🎒</div><div class="gear-name">轻便背包</div><div class="gear-desc">便携优先</div></div>
+          </div>
+          <div style="margin-top:12px;padding:10px 14px;background:var(--bg-input);border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary)">
+            💡 <strong>轻量原则：</strong>起步阶段不要追求设备，手机+稳定器+麦克风三件套就够。先拍起来，画面感和故事感比设备重要。
+          </div>
+        </div>
+
+        <div class="strategy-section">
+          <h3>✂️ 剪辑流程 <span class="en">Editing Workflow</span></h3>
+          <ul class="strategy-list">
+            <li><strong>工具：</strong>剪映手机版（快剪）+ 电脑版（精剪调色），免费够用</li>
+            <li><strong>剪辑节奏：</strong>前3秒抓人 → 主体内容 → 结尾引导互动（关注/评论）</li>
+            <li><strong>双语字幕：</strong>剪映自动识别中文 → 手动翻译英文 → 校对同步</li>
+            <li><strong>调色方向：</strong>黑山海湾偏蓝绿调（Cyber/Teal），老城偏暖黄（Vintage），先套预设再微调</li>
+            <li><strong>BGM：</strong>抖音热门BGM为主，YouTube用Epidemic Sound无版权库</li>
+            <li><strong>每条剪辑时间控制：</strong>30-60秒，起步阶段不要太长</li>
+          </ul>
+        </div>
+
+        <div class="strategy-section">
+          <h3>📊 30天行动计划 <span class="en">30-Day Action Plan</span></h3>
+          <ul class="strategy-list">
+            <li><strong>第1周（7/25-7/31）：</strong>拍完前2条素材，剪辑第1条并发布，熟悉剪辑流程</li>
+            <li><strong>第2周（8/1-8/7）：</strong>发布第2、3条，开始观察数据，找到观众喜欢的方向</li>
+            <li><strong>第3周（8/8-8/14）：</strong>发布第4、5条，根据数据反馈调整选题方向</li>
+            <li><strong>第4周（8/15-8/21）：</strong>复盘前5条数据，确定2-3个爆款方向，开始第二批量产</li>
+            <li><strong>关键指标：</strong>前5条不追求播放量，追求"发出来"。第6条开始看完播率（目标>30%）和互动率</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+// ========== Projects / Kanban ==========
+function renderProjectsPage() {
+  return `
+    <div class="page active">
+      <div class="content-header">
+        <div>
+          <h2>项目看板 <span style="font-size:13px;color:var(--text-muted);font-weight:400">Project Board</span></h2>
+          <div class="header-sub">拖拽卡片管理进度 · Drag cards to update status</div>
+        </div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="openProjectModal()">+ 新建项目</button></div>
+      </div>
+      <div class="content-body"><div class="kanban-board" id="kanbanBoard"></div></div>
+    </div>
+  `;
+}
+
+const stages = [
+  { key: 'idea', label: '构思', labelEn: 'Idea', color: '#94a3b8' },
+  { key: 'shooting', label: '拍摄中', labelEn: 'Shooting', color: '#fbbf24' },
+  { key: 'editing', label: '剪辑中', labelEn: 'Editing', color: '#a78bfa' },
+  { key: 'pending', label: '待发布', labelEn: 'Pending', color: '#00d4ff' },
+  { key: 'published', label: '已发布', labelEn: 'Published', color: '#4ade80' },
+];
+
+function renderKanban() {
+  const data = getActiveData();
+  const board = document.getElementById('kanbanBoard');
+  board.innerHTML = stages.map(stage => {
+    const items = data.projects.filter(p => p.stage === stage.key);
+    return `
+      <div class="kanban-column">
+        <div class="kanban-column-header">
+          <div class="kanban-column-title">
+            <span style="width:7px;height:7px;border-radius:50%;background:${stage.color};display:inline-block"></span>
+            ${stage.label}<span class="en">${stage.labelEn}</span>
+          </div>
+          <span class="column-badge">${items.length}</span>
+        </div>
+        <div class="kanban-column-body" data-stage="${stage.key}" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,'${stage.key}')">
+          ${items.length ? items.map(p => `
+            <div class="project-card" draggable="true" ondragstart="onDragStart(event,'${p.id}')" ondragend="onDragEnd(event)">
+              <div class="project-card-title">${p.title}</div>
+              ${p.titleEn ? `<div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">${p.titleEn}</div>` : ''}
+              <div class="project-card-meta">
+                <span class="tag tag-port">⚓ ${p.port}</span>
+                ${p.platform ? `<span class="tag tag-date">📡 ${p.platform}</span>` : ''}
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${p.progress}%;background:${stage.color}"></div></div>
+              <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--text-muted)">
+                <span>进度 ${p.progress}%</span><span>📅 ${p.deadline || ''}</span>
+              </div>
+              ${p.note ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:5px;line-height:1.3">${p.note}</div>` : ''}
+              <div class="card-actions">
+                <button class="btn btn-secondary btn-sm" onclick="openProjectModal('${p.id}')">编辑</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteProject('${p.id}')">删除</button>
+              </div>
+            </div>
+          `).join('') : '<div class="empty-column">拖拽项目到这里</div>'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function onDragStart(e, id) { dragData = id; e.target.classList.add('dragging'); }
+function onDragEnd(e) { e.target.classList.remove('dragging'); }
+function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDrop(e, stage) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragData) {
+    const data = getActiveData();
+    const project = data.projects.find(p => p.id === dragData);
+    if (project && project.stage !== stage) {
+      project.stage = stage;
+      if (stage === 'published') project.progress = 100;
+      else if (stage === 'idea') project.progress = Math.min(project.progress, 10);
+      saveData(); renderKanban(); showToast('✅ 状态已更新');
+    }
+  }
+  dragData = null;
+}
+
+// ========== Materials ==========
+function renderMaterialsPage() {
+  return `
+    <div class="page active">
+      <div class="content-header">
+        <div>
+          <h2>素材库 <span style="font-size:13px;color:var(--text-muted);font-weight:400">Footage Library</span></h2>
+          <div class="header-sub">管理所有拍摄素材 · Manage all footage</div>
+        </div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="openMaterialModal()">+ 登记素材</button></div>
+      </div>
+      <div class="content-body">
+        <div class="toolbar">
+          <div class="search-box"><input type="text" id="materialSearch" placeholder="搜索素材... Search footage..." oninput="renderMaterials()"></div>
+          <select class="filter-select" id="filterPort" onchange="renderMaterials()"><option value="">所有港口 All Ports</option></select>
+          <select class="filter-select" id="filterStatus" onchange="renderMaterials()">
+            <option value="">所有状态 All Status</option>
+            <option value="raw">待整理 Raw</option>
+            <option value="sorted">已分类 Sorted</option>
+            <option value="archived">已入库 Archived</option>
+          </select>
+          <select class="filter-select" id="filterType" onchange="renderMaterials()">
+            <option value="">所有类型 All Types</option>
+            <option value="video">视频 Video</option>
+            <option value="photo">照片 Photo</option>
+            <option value="audio">音频 Audio</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>类型<span class="en">Type</span></th><th>标题<span class="en">Title</span></th><th>港口<span class="en">Port</span></th>
+              <th>日期<span class="en">Date</span></th><th>时长/数量<span class="en">Duration</span></th><th>状态<span class="en">Status</span></th>
+              <th>备注<span class="en">Notes</span></th><th>操作<span class="en">Actions</span></th>
+            </tr></thead>
+            <tbody id="materialsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderMaterials() {
+  const data = getActiveData();
+  const portFilter = document.getElementById('filterPort');
+  if (portFilter) {
+    const currentVal = portFilter.value;
+    const ports = [...new Set(data.materials.map(m => m.port))];
+    portFilter.innerHTML = '<option value="">所有港口 All Ports</option>' + ports.map(p => `<option value="${p}">${p}</option>`).join('');
+    portFilter.value = currentVal;
+  }
+
+  const search = document.getElementById('materialSearch')?.value.toLowerCase() || '';
+  const fp = document.getElementById('filterPort')?.value || '';
+  const fs = document.getElementById('filterStatus')?.value || '';
+  const ft = document.getElementById('filterType')?.value || '';
+
+  let filtered = data.materials.filter(m => {
+    if (search && !m.title.toLowerCase().includes(search) && !m.port.toLowerCase().includes(search) && !(m.note||'').toLowerCase().includes(search)) return false;
+    if (fp && m.port !== fp) return false;
+    if (fs && m.status !== fs) return false;
+    if (ft && m.type !== ft) return false;
+    return true;
+  });
+
+  const typeMap = { video: '🎬', photo: '📷', audio: '🎵' };
+  const statusMap = {
+    raw: { cls: 'status-raw', text: '待整理 Raw' },
+    sorted: { cls: 'status-sorted', text: '已分类 Sorted' },
+    archived: { cls: 'status-archived', text: '已入库 Archived' }
+  };
+
+  const body = document.getElementById('materialsBody');
+  if (!body) return;
+
+  if (filtered.length === 0) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div><div>暂无素材 · No footage found</div></div></td></tr>`;
+    return;
+  }
+
+  body.innerHTML = filtered.map(m => `
+    <tr>
+      <td><span class="type-icon">${typeMap[m.type] || '📎'}</span></td>
+      <td>${m.title}</td>
+      <td><span class="tag tag-port">${m.port}</span></td>
+      <td>${m.date}</td>
+      <td>${m.duration || '-'}</td>
+      <td><span class="status-badge ${statusMap[m.status].cls}">${statusMap[m.status].text}</span></td>
+      <td style="color:var(--text-secondary);max-width:180px;overflow:hidden;text-overflow:ellipsis">${m.note || '-'}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="openMaterialModal('${m.id}')" title="编辑">✏️</button>
+        <button class="icon-btn delete" onclick="deleteMaterial('${m.id}')" title="删除">🗑️</button>
+      </div></td>
+    </tr>
+  `).join('');
+}
+
+// ========== Calendar ==========
+function renderCalendarPage() {
+  return `
+    <div class="page active">
+      <div class="content-header">
+        <div>
+          <h2>发布日历 <span style="font-size:13px;color:var(--text-muted);font-weight:400">Publish Calendar</span></h2>
+          <div class="header-sub">查看发布记录与计划 · View schedule</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" onclick="prevMonth()">◀ 上月</button>
+          <span id="calendarMonth" style="font-size:14px;font-weight:700;min-width:130px;text-align:center"></span>
+          <button class="btn btn-secondary" onclick="nextMonth()">下月 ▶</button>
+          <button class="btn btn-primary" onclick="openCalendarEventModal()">+ 添加计划</button>
+        </div>
+      </div>
+      <div class="content-body">
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary)">
+          <span>🟣 拍摄计划 Shoot</span><span>🟡 待发布 Planned</span><span>🟢 已发布 Published</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCalendar() {
+  const data = getActiveData();
+  const year = appState.currentMonth.getFullYear();
+  const month = appState.currentMonth.getMonth();
+  const monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  const monthNamesEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  document.getElementById('calendarMonth').textContent = `${year}年 ${monthNames[month]} · ${monthNamesEn[month]}`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = getDateString(new Date());
+
+  let html = '';
+  const weekDays = ['日 Sun','一 Mon','二 Tue','三 Wed','四 Thu','五 Fri','六 Sat'];
+  weekDays.forEach(d => html += `<div class="calendar-header">${d}</div>`);
+  for (let i = 0; i < firstDay; i++) html += '<div class="calendar-cell empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const events = data.calendarEvents.filter(e => e.date === dateStr);
+    html += `<div class="calendar-cell ${dateStr === todayStr ? 'today' : ''}">
+      <div class="calendar-day">${d}</div>
+      ${events.map(e => `<div class="calendar-event ${e.type}" onclick="deleteCalendarEvent('${e.id}')" title="点击删除">${e.title}</div>`).join('')}
+    </div>`;
+  }
+  document.getElementById('calendarGrid').innerHTML = html;
+}
+
+function prevMonth() { appState.currentMonth.setMonth(appState.currentMonth.getMonth() - 1); renderCalendar(); }
+function nextMonth() { appState.currentMonth.setMonth(appState.currentMonth.getMonth() + 1); renderCalendar(); }
+
+// ========== Ports ==========
+function renderPortsPage() {
+  return `
+    <div class="page active">
+      <div class="content-header">
+        <div>
+          <h2>港口档案 <span style="font-size:13px;color:var(--text-muted);font-weight:400">Port Archive</span></h2>
+          <div class="header-sub">每个港口的拍摄要点 · Port shooting notes</div>
+        </div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="openPortModal()">+ 新增港口</button></div>
+      </div>
+      <div class="content-body"><div class="port-grid" id="portGrid"></div></div>
+    </div>
+  `;
+}
+
+function renderPorts() {
+  const data = getActiveData();
+  const grid = document.getElementById('portGrid');
+  if (data.ports.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚓</div><div>暂无港口档案 · No port records</div></div>';
+    return;
+  }
+  grid.innerHTML = data.ports.map(p => `
+    <div class="port-card" onclick="openPortModal('${p.id}')">
+      <div class="port-card-header">
+        <div><div class="port-name">${p.name}</div><div class="port-country">${p.country}</div></div>
+        <span style="font-size:24px">⚓</span>
+      </div>
+      <div class="port-info">
+        <div>📅 <strong>到港日期:</strong> ${p.visitDate || '-'}</div>
+        <div>⏰ <strong>最佳拍摄:</strong> ${p.bestTime || '-'}</div>
+        <div>📍 <strong>推荐机位:</strong> ${p.spots || '-'}</div>
+        <div>💡 <strong>拍摄提示:</strong> ${p.tips || '-'}</div>
+      </div>
+      <div class="port-stats">
+        <div class="port-stat"><div class="port-stat-value">${p.materialCount || 0}</div><div class="port-stat-label">素材</div></div>
+        <div class="port-stat"><div class="port-stat-value">${p.projectCount || 0}</div><div class="port-stat-label">项目</div></div>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openPortModal('${p.id}')">编辑</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePort('${p.id}')">删除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ========== Notes ==========
+function renderNotesPage() {
+  return `
+    <div class="page active">
+      <div class="content-header">
+        <div>
+          <h2>灵感速记 <span style="font-size:13px;color:var(--text-muted);font-weight:400">Ideas & Notes</span></h2>
+          <div class="header-sub">随时记录创意 · Capture ideas instantly</div>
+        </div>
+      </div>
+      <div class="content-body">
+        <div class="note-input">
+          <input type="text" id="noteInput" placeholder="写下你的灵感... Write your idea..." onkeypress="if(event.key==='Enter')addNote()">
+          <button class="btn btn-primary" onclick="addNote()">+ 记录</button>
+        </div>
+        <div class="notes-grid" id="notesGrid"></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderNotes() {
+  const data = getActiveData();
+  const grid = document.getElementById('notesGrid');
+  if (data.notes.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💡</div><div>暂无灵感 · No ideas yet</div></div>';
+    return;
+  }
+  const sorted = [...data.notes].sort((a,b) => b.ts - a.ts);
+  grid.innerHTML = sorted.map(n => {
+    const d = new Date(n.ts);
+    return `<div class="note-card">
+      <div class="note-text">${escapeHtml(n.text)}</div>
+      <div class="note-meta">
+        <span>📝 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</span>
+        <button class="note-delete" onclick="deleteNote('${n.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addNote() {
+  const input = document.getElementById('noteInput');
+  const text = input.value.trim();
+  if (!text) return;
+  getActiveData().notes.push({ id: 'n' + Date.now(), text, ts: Date.now() });
+  saveData(); input.value = ''; renderNotes(); showToast('✅ 灵感已记录');
+}
+
+function deleteNote(id) {
+  const data = getActiveData();
+  data.notes = data.notes.filter(n => n.id !== id);
+  saveData(); renderNotes();
+}
+
+// ========== Modals ==========
+function openModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  editingId = null;
+}
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+function openProjectModal(id) {
+  editingId = id;
+  const data = getActiveData();
+  const p = id ? data.projects.find(x => x.id === id) : {};
+  const portOptions = data.ports.map(pt => `<option value="${pt.name}" ${p.port===pt.name?'selected':''}>${pt.name}</option>`).join('');
+
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">${id?'编辑项目':'新建项目'}<span class="en">${id?'Edit Project':'New Project'}</span></div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>项目标题 <span class="en">Title</span></label><input type="text" id="f_title" value="${p.title||''}" placeholder="如：科托尔老城漫步"></div>
+      <div class="form-group"><label>英文标题 <span class="en">English Title</span></label><input type="text" id="f_titleEn" value="${p.titleEn||''}" placeholder="e.g. Kotor Old Town Walk"></div>
+      <div class="form-row">
+        <div class="form-group"><label>港口 <span class="en">Port</span></label><select id="f_port"><option value="">选择港口...</option>${portOptions}</select></div>
+        <div class="form-group"><label>阶段 <span class="en">Stage</span></label><select id="f_stage">
+          <option value="idea" ${p.stage==='idea'?'selected':''}>构思 Idea</option>
+          <option value="shooting" ${p.stage==='shooting'?'selected':''}>拍摄中 Shooting</option>
+          <option value="editing" ${p.stage==='editing'?'selected':''}>剪辑中 Editing</option>
+          <option value="pending" ${p.stage==='pending'?'selected':''}>待发布 Pending</option>
+          <option value="published" ${p.stage==='published'?'selected':''}>已发布 Published</option>
+        </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>进度 <span class="en">Progress</span></label><input type="number" id="f_progress" value="${p.progress||0}" min="0" max="100"></div>
+        <div class="form-group"><label>截止日期 <span class="en">Deadline</span></label><input type="date" id="f_deadline" value="${p.deadline||''}"></div>
+      </div>
+      <div class="form-group"><label>发布平台 <span class="en">Platform</span></label><input type="text" id="f_platform" value="${p.platform||''}" placeholder="抖音/小红书/YouTube/B站"></div>
+      <div class="form-group"><label>备注 <span class="en">Notes</span></label><textarea id="f_note" placeholder="拍摄要点、剪辑思路...">${p.note||''}</textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveProject()">保存</button></div>
+  `);
+}
+
+function saveProject() {
+  const data = getActiveData();
+  const d = {
+    title: document.getElementById('f_title').value.trim(),
+    titleEn: document.getElementById('f_titleEn').value.trim(),
+    port: document.getElementById('f_port').value,
+    stage: document.getElementById('f_stage').value,
+    progress: parseInt(document.getElementById('f_progress').value) || 0,
+    deadline: document.getElementById('f_deadline').value,
+    platform: document.getElementById('f_platform').value.trim(),
+    note: document.getElementById('f_note').value.trim(),
+  };
+  if (!d.title) { showToast('⚠️ 请输入标题'); return; }
+  if (editingId) {
+    const idx = data.projects.findIndex(p => p.id === editingId);
+    data.projects[idx] = { ...data.projects[idx], ...d };
+  } else {
+    data.projects.push({ id: 'p' + Date.now(), ...d });
+  }
+  saveData(); closeModal(); renderKanban(); showToast('✅ 已保存');
+}
+
+function deleteProject(id) {
+  if (!confirm('确定删除？')) return;
+  const data = getActiveData();
+  data.projects = data.projects.filter(p => p.id !== id);
+  saveData(); renderKanban(); showToast('✅ 已删除');
+}
+
+function openMaterialModal(id) {
+  editingId = id;
+  const data = getActiveData();
+  const m = id ? data.materials.find(x => x.id === id) : {};
+  const portOptions = data.ports.map(pt => `<option value="${pt.name}" ${m.port===pt.name?'selected':''}>${pt.name}</option>`).join('');
+
+  openModal(`
+    <div class="modal-header"><div class="modal-title">${id?'编辑素材':'登记素材'}<span class="en">${id?'Edit Footage':'Add Footage'}</span></div><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>素材标题 <span class="en">Title</span></label><input type="text" id="f_mtitle" value="${m.title||''}" placeholder="如：科托尔老城空镜"></div>
+      <div class="form-row">
+        <div class="form-group"><label>类型 <span class="en">Type</span></label><select id="f_mtype">
+          <option value="video" ${m.type==='video'?'selected':''}>视频 Video 🎬</option>
+          <option value="photo" ${m.type==='photo'?'selected':''}>照片 Photo 📷</option>
+          <option value="audio" ${m.type==='audio'?'selected':''}>音频 Audio 🎵</option>
+        </select></div>
+        <div class="form-group"><label>状态 <span class="en">Status</span></label><select id="f_mstatus">
+          <option value="raw" ${m.status==='raw'?'selected':''}>待整理 Raw</option>
+          <option value="sorted" ${m.status==='sorted'?'selected':''}>已分类 Sorted</option>
+          <option value="archived" ${m.status==='archived'?'selected':''}>已入库 Archived</option>
+        </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>港口 <span class="en">Port</span></label><select id="f_mport"><option value="">选择港口...</option>${portOptions}</select></div>
+        <div class="form-group"><label>拍摄日期 <span class="en">Date</span></label><input type="date" id="f_mdate" value="${m.date||''}"></div>
+      </div>
+      <div class="form-group"><label>时长/数量 <span class="en">Duration</span></label><input type="text" id="f_mduration" value="${m.duration||''}" placeholder="如：20分钟 / 30张"></div>
+      <div class="form-group"><label>备注 <span class="en">Notes</span></label><textarea id="f_mnote" placeholder="素材描述...">${m.note||''}</textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveMaterial()">保存</button></div>
+  `);
+}
+
+function saveMaterial() {
+  const data = getActiveData();
+  const d = {
+    title: document.getElementById('f_mtitle').value.trim(),
+    type: document.getElementById('f_mtype').value,
+    status: document.getElementById('f_mstatus').value,
+    port: document.getElementById('f_mport').value,
+    date: document.getElementById('f_mdate').value,
+    duration: document.getElementById('f_mduration').value.trim(),
+    note: document.getElementById('f_mnote').value.trim(),
+  };
+  if (!d.title) { showToast('⚠️ 请输入标题'); return; }
+  if (editingId) {
+    const idx = data.materials.findIndex(m => m.id === editingId);
+    data.materials[idx] = { ...data.materials[idx], ...d };
+  } else {
+    data.materials.push({ id: 'm' + Date.now(), ...d });
+  }
+  saveData(); closeModal(); renderMaterials(); showToast('✅ 已保存');
+}
+
+function deleteMaterial(id) {
+  if (!confirm('确定删除？')) return;
+  const data = getActiveData();
+  data.materials = data.materials.filter(m => m.id !== id);
+  saveData(); renderMaterials(); showToast('✅ 已删除');
+}
+
+function openPortModal(id) {
+  editingId = id;
+  const data = getActiveData();
+  const p = id ? data.ports.find(x => x.id === id) : {};
+  openModal(`
+    <div class="modal-header"><div class="modal-title">${id?'编辑港口':'新增港口'}<span class="en">${id?'Edit Port':'Add Port'}</span></div><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>港口名称 <span class="en">Port Name</span></label><input type="text" id="f_pname" value="${p.name||''}" placeholder="如：科托尔 Kotor"></div>
+        <div class="form-group"><label>国家 <span class="en">Country</span></label><input type="text" id="f_pcountry" value="${p.country||''}" placeholder="如：黑山 Montenegro"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>到港日期 <span class="en">Visit Date</span></label><input type="date" id="f_pvisit" value="${p.visitDate||''}"></div>
+        <div class="form-group"><label>最佳拍摄时间 <span class="en">Best Time</span></label><input type="text" id="f_pbest" value="${p.bestTime||''}" placeholder="如：日出/日落"></div>
+      </div>
+      <div class="form-group"><label>推荐机位 <span class="en">Spots</span></label><input type="text" id="f_pspots" value="${p.spots||''}" placeholder="推荐拍摄地点"></div>
+      <div class="form-group"><label>拍摄提示 <span class="en">Tips</span></label><textarea id="f_ptips" placeholder="注意事项、调色思路...">${p.tips||''}</textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>素材数量 <span class="en">Materials</span></label><input type="number" id="f_pmat" value="${p.materialCount||0}" min="0"></div>
+        <div class="form-group"><label>项目数量 <span class="en">Projects</span></label><input type="number" id="f_pproj" value="${p.projectCount||0}" min="0"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="savePort()">保存</button></div>
+  `);
+}
+
+function savePort() {
+  const data = getActiveData();
+  const d = {
+    name: document.getElementById('f_pname').value.trim(),
+    country: document.getElementById('f_pcountry').value.trim(),
+    visitDate: document.getElementById('f_pvisit').value,
+    bestTime: document.getElementById('f_pbest').value.trim(),
+    spots: document.getElementById('f_pspots').value.trim(),
+    tips: document.getElementById('f_ptips').value.trim(),
+    materialCount: parseInt(document.getElementById('f_pmat').value) || 0,
+    projectCount: parseInt(document.getElementById('f_pproj').value) || 0,
+  };
+  if (!d.name) { showToast('⚠️ 请输入港口名'); return; }
+  if (editingId) {
+    const idx = data.ports.findIndex(p => p.id === editingId);
+    data.ports[idx] = { ...data.ports[idx], ...d };
+  } else {
+    data.ports.push({ id: 'pt' + Date.now(), ...d });
+  }
+  saveData(); closeModal(); renderPorts(); showToast('✅ 已保存');
+}
+
+function deletePort(id) {
+  if (!confirm('确定删除？')) return;
+  const data = getActiveData();
+  data.ports = data.ports.filter(p => p.id !== id);
+  saveData(); renderPorts(); showToast('✅ 已删除');
+}
+
+function openCalendarEventModal() {
+  openModal(`
+    <div class="modal-header"><div class="modal-title">添加日历计划<span class="en">Add Event</span></div><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>标题 <span class="en">Title</span></label><input type="text" id="f_ctitle" placeholder="如：第一支视频发布"></div>
+      <div class="form-row">
+        <div class="form-group"><label>日期 <span class="en">Date</span></label><input type="date" id="f_cdate"></div>
+        <div class="form-group"><label>类型 <span class="en">Type</span></label><select id="f_ctype">
+          <option value="shoot">拍摄计划 Shoot</option>
+          <option value="planned">待发布 Planned</option>
+          <option value="published">已发布 Published</option>
+        </select></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveCalendarEvent()">保存</button></div>
+  `);
+}
+
+function saveCalendarEvent() {
+  const data = getActiveData();
+  const title = document.getElementById('f_ctitle').value.trim();
+  const date = document.getElementById('f_cdate').value;
+  const type = document.getElementById('f_ctype').value;
+  if (!title || !date) { showToast('⚠️ 请填写完整'); return; }
+  data.calendarEvents.push({ id: 'c' + Date.now(), title, date, type });
+  saveData(); closeModal(); renderCalendar(); showToast('✅ 已添加');
+}
+
+function deleteCalendarEvent(id) {
+  if (!confirm('删除此计划？')) return;
+  const data = getActiveData();
+  data.calendarEvents = data.calendarEvents.filter(e => e.id !== id);
+  saveData(); renderCalendar(); showToast('✅ 已删除');
+}
+
+// ========== Add Workspace ==========
+function addWorkspace() {
+  const name = prompt('工作区名称 / Workspace name:', '新工作区');
+  if (!name) return;
+  const id = 'ws' + Date.now();
+  appState.workspaces.push({
+    id, icon: '📁', name, nameEn: name, color: 'accent',
+    data: { projects: [], materials: [], ports: [], notes: [], calendarEvents: [] }
+  });
+  appState.activeWsId = id;
+  appState.activePage = 'dashboard';
+  saveData(); renderAll(); showToast('✅ 工作区已创建');
+}
+
+// ========== Import/Export ==========
+function exportData() {
+  const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vlog_workbench_${getDateString(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ 数据已导出');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.workspaces) {
+        appState = data;
+        if (typeof appState.currentMonth === 'string') appState.currentMonth = new Date(appState.currentMonth);
+        saveData(); renderAll(); showToast('✅ 导入成功');
+      } else { showToast('⚠️ 格式不正确'); }
+    } catch(err) { showToast('⚠️ 导入失败'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ========== Utils ==========
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ========== Init ==========
+loadData();
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="哦卡卡">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#EC4899">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="shortcut icon" href="icons/favicon.ico">
+<title>哦卡卡的工作台</title>
+<style>
+:root {
+  --pink-50:#FDF2F8;--pink-100:#FCE7F3;--pink-200:#FBCFE8;--pink-300:#F9A8D4;
+  --pink-400:#F472B6;--pink-500:#EC4899;--pink-600:#DB2777;--pink-700:#BE185D;
+  --bg-main:#FFF5F9;--bg-sidebar:#FFE4EF;--bg-card:#FFFFFF;--bg-input:#FDF2F8;
+  --bg-hover:#FCE7F3;--bg-bubble-user:#FFFFFF;--bg-bubble-ai:#FCE7F3;
+  --text-primary:#4A2C38;--text-secondary:#8B6B7A;--text-muted:#C4A8B5;
+  --border:#F9D4E5;--border-strong:#F0B4D4;
+  --shadow:0 2px 12px rgba(236,72,153,0.08);--shadow-lg:0 4px 24px rgba(236,72,153,0.12);
+  --radius:16px;--radius-sm:10px;--radius-xs:6px;
+  --transition:0.25s ease;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+[data-theme="dark"]{
+  --pink-50:#2D1B2E;--pink-100:#3A2340;--pink-200:#4A2D52;--pink-300:#6B3D6E;
+  --pink-400:#D070A8;--pink-500:#EC4899;--pink-600:#F472B6;--pink-700:#F9A8D4;
+  --bg-main:#1A0E1E;--bg-sidebar:#241327;--bg-card:#2D1B2E;--bg-input:#3A2340;
+  --bg-hover:#3A2340;--bg-bubble-user:#2D1B2E;--bg-bubble-ai:#3A2340;
+  --text-primary:#F0D9E4;--text-secondary:#B89AA8;--text-muted:#7A5A6E;
+  --border:#3A2340;--border-strong:#4A2D52;
+  --shadow:0 2px 12px rgba(0,0,0,0.3);--shadow-lg:0 4px 24px rgba(0,0,0,0.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg-main);color:var(--text-primary);height:100vh;height:100dvh;overflow:hidden;transition:background .3s,color .3s}
+#loadingScreen{position:fixed;inset:0;background:var(--bg-main);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s,visibility .5s}
+#loadingScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loading-heart{width:48px;height:48px;position:relative;animation:heartBeat 1s ease-in-out infinite}
+.loading-heart::before,.loading-heart::after{content:'';position:absolute;width:24px;height:36px;background:var(--pink-400);border-radius:24px 24px 0 0;top:0;left:12px;transform:rotate(-45deg);transform-origin:0 100%}
+.loading-heart::after{left:0;transform:rotate(45deg);transform-origin:100% 100%}
+@keyframes heartBeat{0%,100%{transform:scale(1)}25%{transform:scale(1.15)}50%{transform:scale(.95)}75%{transform:scale(1.1)}}
+.loading-text{margin-top:20px;font-size:14px;color:var(--pink-500);font-weight:600;letter-spacing:1px}
+.app{display:flex;height:100vh;height:100dvh;overflow:hidden}
+.sidebar{width:260px;flex-shrink:0;background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:background .3s,border-color .3s}
+.sidebar-header{padding:calc(16px + var(--safe-top)) 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sidebar-title{font-size:17px;font-weight:800;color:var(--pink-600);display:flex;align-items:center;gap:8px}
+.sidebar-title-icon{font-size:20px}
+.theme-toggle{width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);background:var(--bg-card);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition);flex-shrink:0}
+.theme-toggle:hover{background:var(--pink-200);transform:scale(1.05)}
+[data-theme="dark"] .theme-toggle .icon-sun{display:block}
+[data-theme="dark"] .theme-toggle .icon-moon{display:none}
+.theme-toggle .icon-sun{display:none}
+.theme-toggle .icon-moon{display:block}
+.sidebar-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;-webkit-overflow-scrolling:touch}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-track{background:transparent}
+.sidebar-nav::-webkit-scrollbar-thumb{background:var(--pink-300);border-radius:2px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text-secondary);transition:all var(--transition);margin-bottom:4px;font-size:14px;font-weight:500;position:relative}
+.nav-item:hover{background:var(--bg-hover);color:var(--pink-600)}
+.nav-item.active{background:var(--pink-200);color:var(--pink-700);font-weight:600}
+[data-theme="dark"] .nav-item.active{background:var(--pink-300);color:var(--pink-50)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--pink-500);border-radius:0 3px 3px 0}
+.nav-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;background:var(--pink-300);color:var(--pink-700);padding:1px 7px;border-radius:10px;font-weight:700;min-width:18px;text-align:center}
+[data-theme="dark"] .nav-badge{background:var(--pink-500);color:#fff}
+.sidebar-footer{padding:8px 14px calc(10px + var(--safe-bottom));border-top:1px solid var(--border);flex-shrink:0}
+.clear-all-btn{width:100%;padding:9px;border-radius:var(--radius-sm);border:1px solid var(--pink-300);background:transparent;color:var(--pink-600);cursor:pointer;font-size:13px;font-weight:600;transition:all var(--transition);display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px}
+.clear-all-btn:hover{background:var(--pink-100)}
+.settings-btn{width:100%;padding:9px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:600;transition:all var(--transition);display:flex;align-items:center;justify-content:center;gap:6px}
+.settings-btn:hover{background:var(--bg-hover);color:var(--pink-600)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.main-header{padding:calc(14px + var(--safe-top)) 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;background:var(--bg-card)}
+.main-header-left{display:flex;align-items:center;gap:10px;min-width:0}
+.main-header-icon{font-size:22px;flex-shrink:0}
+.main-header-title{font-size:17px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main-header-sub{font-size:11px;color:var(--text-muted);margin-top:1px}
+.clear-chat-btn{padding:7px 14px;border-radius:var(--radius-xs);border:1px solid var(--border-strong);background:var(--bg-card);color:var(--pink-600);cursor:pointer;font-size:12px;font-weight:600;transition:all var(--transition);white-space:nowrap;display:flex;align-items:center;gap:4px;flex-shrink:0}
+.clear-chat-btn:hover{background:var(--pink-100)}
+.api-status{font-size:10px;padding:3px 8px;border-radius:10px;font-weight:600;flex-shrink:0}
+.api-status.online{background:rgba(74,222,128,0.15);color:#16a34a}
+.api-status.offline{background:rgba(251,191,36,0.15);color:#d97706}
+[data-theme="dark"] .api-status.online{color:#4ade80}
+[data-theme="dark"] .api-status.offline{color:#fbbf24}
+.chat-area{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 16px 8px;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:5px}
+.chat-area::-webkit-scrollbar-track{background:transparent}
+.chat-area::-webkit-scrollbar-thumb{background:var(--pink-200);border-radius:3px}
+.message{max-width:85%;margin-bottom:16px;animation:msgIn .3s ease;position:relative}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.message-user{margin-left:auto}
+.message-ai{margin-right:auto}
+.bubble{padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65;word-break:break-word;position:relative}
+.message-user .bubble{background:var(--bg-bubble-user);border:1.5px solid var(--pink-300);color:var(--text-primary);border-bottom-right-radius:4px}
+.message-ai .bubble{background:var(--bg-bubble-ai);color:var(--text-primary);border-bottom-left-radius:4px}
+.bubble-content{white-space:pre-wrap}
+.bubble-content a{color:var(--pink-500);text-decoration:underline;word-break:break-all}
+.bubble-content strong{color:var(--pink-700);font-weight:700}
+[data-theme="dark"] .bubble-content strong{color:var(--pink-300)}
+.bubble-content code{background:rgba(236,72,153,0.1);padding:2px 6px;border-radius:4px;font-size:13px;font-family:"SF Mono","Fira Code",monospace}
+.bubble-content ul,.bubble-content ol{margin:6px 0;padding-left:20px}
+.bubble-content li{margin:3px 0}
+.bubble-content h1,.bubble-content h2,.bubble-content h3{margin:10px 0 6px;color:var(--pink-600);font-size:15px;font-weight:700}
+.copy-btn{position:absolute;bottom:4px;right:8px;font-size:11px;color:var(--pink-500);background:transparent;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;opacity:.7;transition:all .2s;font-weight:600}
+.copy-btn:hover{opacity:1;background:rgba(236,72,153,0.1)}
+.message-user .copy-btn{display:none}
+.loading-bubble{display:flex;align-items:center;gap:4px;padding:16px 20px}
+.loading-dot{width:8px;height:8px;border-radius:50%;background:var(--pink-400);animation:dotPulse 1.2s ease-in-out infinite}
+.loading-dot:nth-child(2){animation-delay:.15s}
+.loading-dot:nth-child(3){animation-delay:.3s}
+@keyframes dotPulse{0%,80%,100%{transform:scale(.7);opacity:.5}40%{transform:scale(1.1);opacity:1}}
+.welcome-msg{text-align:center;padding:40px 20px;color:var(--text-secondary)}
+.welcome-icon{font-size:48px;margin-bottom:12px}
+.welcome-title{font-size:16px;font-weight:600;color:var(--pink-500);margin-bottom:6px}
+.welcome-desc{font-size:13px;line-height:1.6;max-width:320px;margin:0 auto}
+.welcome-suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px;max-width:400px;margin-left:auto;margin-right:auto}
+.suggestion-chip{padding:8px 14px;border-radius:20px;background:var(--bg-card);border:1px solid var(--border-strong);color:var(--pink-600);font-size:12px;cursor:pointer;transition:all var(--transition)}
+.suggestion-chip:hover{background:var(--pink-100);transform:translateY(-1px)}
+.input-area{padding:10px 16px calc(10px + var(--safe-bottom));border-top:1px solid var(--border);background:var(--bg-card);flex-shrink:0}
+.input-row{display:flex;gap:10px;align-items:flex-end}
+.input-wrapper{flex:1;position:relative}
+#msgInput{width:100%;min-height:42px;max-height:120px;padding:11px 16px;border-radius:21px;border:1.5px solid var(--border-strong);background:var(--bg-input);color:var(--text-primary);font-size:14px;font-family:inherit;resize:none;outline:none;transition:border-color var(--transition);line-height:1.5}
+#msgInput:focus{border-color:var(--pink-400)}
+#msgInput::placeholder{color:var(--text-muted)}
+.send-btn{width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pink-400),var(--pink-600));color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all var(--transition);flex-shrink:0}
+.send-btn:hover:not(:disabled){transform:scale(1.05);box-shadow:0 4px 12px rgba(236,72,153,0.3)}
+.send-btn:disabled,.send-btn.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.send-icon-send{display:inline}.send-icon-stop{display:none}
+.send-btn.generating .send-icon-send{display:none}.send-btn.generating .send-icon-stop{display:inline}
+.todo-container{padding:16px;max-width:640px;margin:0 auto}
+.todo-input-row{display:flex;gap:8px;margin-bottom:16px}
+.todo-input-row input{flex:1;padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-strong);background:var(--bg-input);color:var(--text-primary);font-size:14px;font-family:inherit;outline:none}
+.todo-input-row input:focus{border-color:var(--pink-400)}
+.todo-add-btn{padding:0 18px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,var(--pink-400),var(--pink-600));color:#fff;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--transition);white-space:nowrap}
+.todo-add-btn:hover{transform:scale(1.02)}
+.todo-list{list-style:none}
+.todo-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;transition:all var(--transition);animation:msgIn .3s ease}
+.todo-item:hover{border-color:var(--border-strong);box-shadow:var(--shadow)}
+.todo-checkbox{width:22px;height:22px;border-radius:6px;border:2px solid var(--border-strong);cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all var(--transition);background:var(--bg-card)}
+.todo-checkbox.checked{background:var(--pink-500);border-color:var(--pink-500)}
+.todo-checkbox.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
+.todo-text{flex:1;font-size:14px;line-height:1.5;color:var(--text-primary);white-space:pre-wrap;word-break:break-word}
+.todo-item.done .todo-text{text-decoration:line-through;color:var(--text-muted)}
+.todo-delete{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:all .2s;flex-shrink:0}
+.todo-delete:hover{color:var(--pink-500);background:var(--pink-100)}
+.todo-empty{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px}
+.todo-empty-icon{font-size:36px;margin-bottom:8px;opacity:.5}
+.todo-filters{display:flex;gap:6px;margin-bottom:12px}
+.todo-filter{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;font-size:12px;font-weight:600;transition:all var(--transition)}
+.todo-filter.active{background:var(--pink-200);color:var(--pink-700);border-color:var(--pink-300)}
+[data-theme="dark"] .todo-filter.active{background:var(--pink-500);color:#fff}
+.modal-overlay{position:fixed;inset:0;background:rgba(74,44,56,0.5);backdrop-filter:blur(4px);z-index:5000;display:none;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease}
+.modal-overlay.active{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--bg-card);border-radius:var(--radius);padding:24px;max-width:380px;width:100%;box-shadow:var(--shadow-lg);animation:modalIn .3s ease;max-height:85vh;overflow-y:auto}
+@keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-icon{font-size:32px;text-align:center;margin-bottom:12px}
+.modal-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:8px;color:var(--text-primary)}
+.modal-desc{font-size:13px;text-align:center;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+.modal-buttons{display:flex;gap:10px}
+.modal-btn{flex:1;padding:11px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--transition)}
+.modal-btn-cancel{background:var(--bg-card);color:var(--pink-500);border:1.5px solid var(--pink-300)}
+.modal-btn-cancel:hover{background:var(--pink-100)}
+.modal-btn-confirm{background:linear-gradient(135deg,var(--pink-400),var(--pink-600));color:#fff}
+.modal-btn-confirm:hover{transform:scale(1.02)}
+.toast{position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(100px);background:var(--pink-500);color:#fff;padding:10px 24px;border-radius:24px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);z-index:6000;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.menu-toggle{display:none;background:var(--bg-card);border:1px solid var(--border);color:var(--pink-600);width:36px;height:36px;border-radius:var(--radius-xs);cursor:pointer;font-size:18px;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:999}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text-secondary)}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-strong);background:var(--bg-input);color:var(--text-primary);font-size:14px;font-family:inherit;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--pink-400)}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-hint{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.4}
+.preset-btn{padding:8px 12px;border-radius:var(--radius-xs);border:1px solid var(--border-strong);background:var(--bg-card);color:var(--pink-600);cursor:pointer;font-size:12px;font-weight:600;transition:all var(--transition);text-align:left}
+.preset-btn:hover{background:var(--pink-100)}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:1000;transform:translateX(-100%);transition:transform .3s}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.active{display:block}
+  .menu-toggle{display:flex}
+  .message{max-width:92%}
+}
+.error-bubble{background:rgba(248,113,113,0.1)!important;border:1px solid rgba(248,113,113,0.3)!important;color:#e53e3e!important}
+</style>
+</head>
+<body>
+<div id="loadingScreen"><div class="loading-heart"></div><div class="loading-text">哦卡卡的工作台加载中...</div></div>
+<div class="app">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title"><span class="sidebar-title-icon">🎀</span>哦卡卡的工作台</div>
+      <button class="theme-toggle" onclick="toggleTheme()"><span class="icon-moon">🌙</span><span class="icon-sun">☀️</span></button>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <button class="clear-all-btn" onclick="confirmClearAll()">🗑️ 清空全部对话</button>
+      <button class="settings-btn" onclick="openSettings()">⚙️ AI 设置</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="main-header">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <div class="main-header-left">
+          <span class="main-header-icon" id="headerIcon">📋</span>
+          <div>
+            <div class="main-header-title" id="headerTitle">视频创作</div>
+            <div class="main-header-sub" id="headerSub">Video Creation</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span class="api-status offline" id="apiStatus">离线模式</span>
+        <button class="clear-chat-btn" id="clearChatBtn" onclick="confirmClearChat()">🗑️ 清空对话</button>
+      </div>
+    </div>
+    <div class="chat-area" id="chatArea"></div>
+    <div class="input-area" id="inputArea">
+      <div class="input-row">
+        <div class="input-wrapper"><textarea id="msgInput" placeholder="输入消息..." rows="1"></textarea></div>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled><span class="send-icon-send">➤</span><span class="send-icon-stop">⏹</span></button>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalContent"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+/* ================================================================ 哦卡卡的工作台 PWA版 ================================================================ */
+
+/* ========== 板块集中配置 ========== */
+const SECTIONS=[
+{ id:'video',icon:'🎬',name:'视频创作',nameEn:'Video Creation',type:'chat',
+  welcome:'你好！我是你的视频创作助手 🎬',desc:'帮你撰写剪辑脚本、短视频文案、镜头建议、剪映操作指导，也会主动推荐热门选题和爆款思路。',
+  suggestions:['推荐3个当下热门短视频选题','帮我写一段30秒的开箱视频文案','剪映如何制作卡点视频？','美食探店视频的镜头怎么拍？'],
+  systemPrompt:'你是「哦卡卡」的视频创作助手，专注于短视频和影视创作领域。能力：撰写剪辑脚本、短视频文案、镜头建议、剪映操作指导、影视创作思路。主动提供当下热门短视频选题和爆款思路。输出条理清晰、分点排版、文本便于直接复制。用中文回复。' },
+{ id:'spanish',icon:'🇪🇸',name:'西语学习',nameEn:'Spanish Learning',type:'chat',
+  welcome:'¡Hola! 我是你的西语学习助手 🇪🇸',desc:'口语练习、购物场景对话、词汇、听力训练，附带音标和中文谐音方便朗读，按出行场景分类。',
+  suggestions:['购物场景常用西语短句','餐厅点餐西语对话','西语数字1-20怎么读','机场值机实用西语'],
+  systemPrompt:'你是「哦卡卡」的西班牙语学习助手。能力：口语练习、购物场景短句对话、词汇教学、听力训练。每个西语表达必须附带音标（IPA）和中文谐音，按出行场景分类。格式：\n西语：Hola\n音标：[ˈo.la]\n谐音：哦拉\n意思：你好' },
+{ id:'beauty',icon:'🌸',name:'美妆信息',nameEn:'Beauty & Fragrance',type:'chat',
+  welcome:'你好！我是你的香水科普助手 🌸',desc:'专注香水内容：香奈儿男女香水科普、各大品牌香水前中后调解析，分点清晰方便对比学习。',
+  suggestions:['香奈儿经典女士香水科普','男士香水推荐及前中后调解析','香水前调中调后调是什么意思？','各大品牌经典香水对比'],
+  systemPrompt:'你是「哦卡卡」的美妆信息助手，只专注香水相关内容。能力：香奈儿男女香水科普、各大品牌香水前中后调解析。严格限制：不拓展彩妆护肤。格式：\n【品牌】香水名\n前调：...\n中调：...\n后调：...\n适合场景：...' },
+{ id:'food',icon:'🍳',name:'美食配方',nameEn:'Recipes',type:'chat',
+  welcome:'你好！我是你的美食配方助手 🍳',desc:'家常菜、减脂餐、各类饼类食谱，简单易操作，食材容易购买，配料精准，步骤清晰。',
+  suggestions:['简单减脂晚餐食谱','葱油饼的家常做法','15分钟快手家常菜','低卡饱腹早餐推荐'],
+  systemPrompt:'你是「哦卡卡」的美食配方助手。提供家常菜、减脂餐、各类饼类食谱。优先简单易操作、食材容易购买。配料分量精准（用克/毫升），步骤清晰编号，注明烹饪时间和难度。' },
+{ id:'work',icon:'📝',name:'工作事务',nameEn:'Work & Todo',type:'todo',welcome:'',desc:'',suggestions:[],systemPrompt:'' },
+{ id:'fitness',icon:'💪',name:'健身',nameEn:'Fitness',type:'chat',
+  welcome:'你好！我是你的健身助手 💪',desc:'居家无器械训练方案，按部位划分动作，生成每日训练计划，讲解标准动作要点。',
+  suggestions:['今天练臀部的居家方案','手臂无器械训练动作','生成一周居家训练计划','深蹲标准动作要点讲解'],
+  systemPrompt:'你是「哦卡卡」的健身助手。提供居家无器械训练方案，按臀部、手臂、背部、腹部、腿部等部位划分。每个动作说明目标肌群、动作步骤、组数次数、注意事项。' },
+{ id:'english',icon:'🇬🇧',name:'英文学习',nameEn:'English Learning',type:'chat',
+  welcome:'Hello! 我是你的英文学习助手 🇬🇧',desc:'商务英语（工作总结、职场沟通）+ 旅行实用英语，覆盖听说读，例句附带音标方便背诵。',
+  suggestions:['职场邮件常用英文句型','旅行机场实用英语','工作总结英文怎么说','商务会议英语表达'],
+  systemPrompt:'你是「哦卡卡」的英文学习助手。能力：商务英语（工作总结、职场沟通）和旅行实用英语。例句必须附带音标（IPA），按场景分类，中英对照。格式：\nEnglish: ...\n音标：[...]\n中文：...' },
+{ id:'russian',icon:'🇷🇺',name:'俄语学习',nameEn:'Russian Learning',type:'chat',
+  welcome:'Здравствуйте! 我是你的俄语学习助手 🇷🇺',desc:'俄语入门学习，日常交流短句、基础词汇，附带音标和中文谐音辅助朗读。',
+  suggestions:['俄语日常问候短句','俄语数字1-10怎么读','俄语购物实用短句','俄语字母发音入门'],
+  systemPrompt:'你是「哦卡卡」的俄语学习助手，面向入门学习者。每个俄语表达必须附带音标和中文谐音。格式：\n俄语：Привет\n音标：[prʲɪˈvʲet]\n谐音：普利维特\n意思：你好' },
+{ id:'copywriting',icon:'✍️',name:'文案生成',nameEn:'Copywriting',type:'chat',
+  welcome:'你好！我是你的文案生成助手 ✍️',desc:'社交平台文案、随笔短句、短视频文案，搜集网络热门文案素材，直接可用。',
+  suggestions:['生成5条朋友圈唯美文案','小红书种草文案模板','短视频结尾引导关注文案','节日借势文案素材'],
+  systemPrompt:'你是「哦卡卡」的文案生成助手。生成社交平台文案、随笔短句、短视频文案。文案直接可用、风格多样、附带适用场景说明。可一次提供多条供选择。' },
+{ id:'stocks',icon:'📈',name:'股票资讯',nameEn:'Stock News',type:'chat',
+  welcome:'你好！我是你的股票资讯整理助手 📈',desc:'每日股市重大新闻、美股市场动态，仅客观整理资讯，不提供任何投资建议。',
+  suggestions:['今日美股市场重要新闻','本周股市重大事件整理','美股科技股最新动态','近期财经要闻汇总'],
+  systemPrompt:'你是「哦卡卡」的股票资讯整理助手。仅搜集整理每日股市重大新闻、美股市场动态。严禁给出任何买入、卖出、持有等投资建议，不预测涨跌，不推荐个股。如有用户问投资建议，明确回复"我仅提供资讯整理，不提供投资建议"。' }
+];
+
+/* ========== State ========== */
+let activeSectionId='video',chatHistories={},todoItems=[],isGenerating=false,abortController=null;
+let todoFilter='all';
+
+/* ========== Storage ========== */
+const STORAGE_KEY='okaka_workbench_pwa_v1',THEME_KEY='okaka_theme',API_KEY='okaka_api_config';
+
+function loadData(){try{const s=localStorage.getItem(STORAGE_KEY);if(s){const d=JSON.parse(s);chatHistories=d.chatHistories||{};todoItems=d.todoItems||[];activeSectionId=d.activeSectionId||'video'}}catch(e){}}
+function saveData(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({chatHistories,todoItems,activeSectionId}))}catch(e){}}
+function loadTheme(){if(localStorage.getItem(THEME_KEY)==='dark')document.documentElement.setAttribute('data-theme','dark')}
+function toggleTheme(){const c=document.documentElement.getAttribute('data-theme');if(c==='dark'){document.documentElement.removeAttribute('data-theme');localStorage.setItem(THEME_KEY,'light')}else{document.documentElement.setAttribute('data-theme','dark');localStorage.setItem(THEME_KEY,'dark')}}
+
+/* ========== API Config ========== */
+function getApiConfig(){try{return JSON.parse(localStorage.getItem(API_KEY)||'{}')}catch(e){return{}}}
+function isApiConfigured(){const c=getApiConfig();return !!(c.url&&c.key)}
+function saveApiConfig(cfg){localStorage.setItem(API_KEY,JSON.stringify(cfg))}
+
+function updateApiStatus(){
+  const el=document.getElementById('apiStatus');
+  // 先检查前端配置
+  if(isApiConfigured()){el.textContent='AI在线';el.className='api-status online';return}
+  // 再检查后端是否配了API
+  fetch('/api/health').then(r=>r.json()).then(h=>{
+    if(h.aiConfigured){el.textContent='AI在线';el.className='api-status online'}
+    else{el.textContent='离线模式';el.className='api-status offline'}
+  }).catch(()=>{
+    el.textContent='离线模式';el.className='api-status offline';
+  });
+}
+
+/* ========== Render Sidebar ========== */
+function renderSidebar(){
+  const nav=document.getElementById('sidebarNav');
+  nav.innerHTML=SECTIONS.map(s=>{
+    let badge='';
+    if(s.type==='chat'&&chatHistories[s.id]){const c=chatHistories[s.id].length;if(c>0)badge=`<span class="nav-badge">${c}</span>`}
+    else if(s.id==='work'&&todoItems.length>0){const u=todoItems.filter(t=>!t.done).length;if(u>0)badge=`<span class="nav-badge">${u}</span>`}
+    return `<div class="nav-item ${s.id===activeSectionId?'active':''}" onclick="switchSection('${s.id}')"><span class="nav-icon">${s.icon}</span><span>${s.name}</span>${badge}</div>`;
+  }).join('');
+}
+
+function switchSection(id){activeSectionId=id;saveData();renderSidebar();renderMain();document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active')}
+
+/* ========== Render Main ========== */
+function renderMain(){
+  const s=SECTIONS.find(x=>x.id===activeSectionId);if(!s)return;
+  document.getElementById('headerIcon').textContent=s.icon;
+  document.getElementById('headerTitle').textContent=s.name;
+  document.getElementById('headerSub').textContent=s.nameEn;
+  const cb=document.getElementById('clearChatBtn'),ia=document.getElementById('inputArea');
+  if(s.type==='todo'){cb.style.display='none';ia.style.display='none';renderTodo()}
+  else{cb.style.display='flex';ia.style.display='block';renderChat();updateSendBtn()}
+}
+
+/* ========== Chat ========== */
+function renderChat(){
+  const s=SECTIONS.find(x=>x.id===activeSectionId),h=chatHistories[s.id]||[],a=document.getElementById('chatArea');
+  if(h.length===0){a.innerHTML=`<div class="welcome-msg"><div class="welcome-icon">${s.icon}</div><div class="welcome-title">${s.welcome}</div><div class="welcome-desc">${s.desc}</div>${s.suggestions&&s.suggestions.length?`<div class="welcome-suggestions">${s.suggestions.map(x=>`<div class="suggestion-chip" onclick="useSuggestion('${x.replace(/'/g,"\\'")}')">${x}</div>`).join('')}</div>`:''}</div>`;return}
+  a.innerHTML=h.map(renderMessage).join('');
+  const last=h[h.length-1];
+  if(last&&last.role==='ai'&&last.loading){a.innerHTML+=`<div class="message message-ai"><div class="bubble loading-bubble"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>`}
+  scrollToBottom();
+}
+
+function renderMessage(msg){
+  if(msg.role==='user')return `<div class="message message-user"><div class="bubble"><div class="bubble-content">${escapeHtml(msg.content)}</div><button class="copy-btn" onclick="copyMessage(this,${JSON.stringify(msg.content).replace(/"/g,'&quot;')})">复制</button></div></div>`;
+  const html=formatAIContent(msg.content),err=msg.error?' error-bubble':'';
+  return `<div class="message message-ai"><div class="bubble${err}"><div class="bubble-content">${html}</div>${!msg.error?`<button class="copy-btn" onclick="copyMessage(this,${JSON.stringify(msg.content).replace(/"/g,'&quot;')})">复制</button>`:''}</div></div>`;
+}
+
+function formatAIContent(text){
+  let h=escapeHtml(text);
+  h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/`(.+?)`/g,'<code>$1</code>');
+  h=h.replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  h=h.replace(/^[\-] (.+)$/gm,'<li>$1</li>').replace(/^[*] (.+)$/gm,'<li>$1</li>').replace(/^\d+[\.)] (.+)$/gm,'<li>$1</li>');
+  h=h.replace(/(<li>.*<\/li>)/s,'<ul>$1</ul>');h=h.replace(/<\/li>\n(<li>)/g,'</li><li>');
+  h=h.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  h=h.replace(/\n/g,'<br>');h=h.replace(/<br>(<(h[1-3]|ul|ol|li))/g,'$1');h=h.replace(/(<\/(h[1-3]|ul|ol|li)>)<br>/g,'$1');
+  return h;
+}
+
+function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function scrollToBottom(){const a=document.getElementById('chatArea');setTimeout(()=>{a.scrollTop=a.scrollHeight},50)}
+function useSuggestion(t){const i=document.getElementById('msgInput');i.value=t;updateSendBtn();autoResize(i);i.focus()}
+
+/* ========== Send Message ========== */
+async function sendMessage(){
+  if(isGenerating){if(abortController)abortController.abort();return}
+  const input=document.getElementById('msgInput'),text=input.value.trim();if(!text)return;
+  const s=SECTIONS.find(x=>x.id===activeSectionId);if(s.type!=='chat')return;
+  if(!chatHistories[s.id])chatHistories[s.id]=[];
+  chatHistories[s.id].push({role:'user',content:text});
+  chatHistories[s.id].push({role:'ai',content:'',loading:true});
+  input.value='';autoResize(input);updateSendBtn();renderChat();renderSidebar();saveData();
+  isGenerating=true;updateGenerateBtn();
+
+  const history=chatHistories[s.id].filter(m=>!m.loading&&!m.error).map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content}));
+  const messages=[{role:'system',content:s.systemPrompt},...history];
+  abortController=new AbortController();
+
+  try{
+    const reply=await callAI(messages,abortController.signal,s.id,text);
+    const arr=chatHistories[s.id];arr[arr.length-1]={role:'ai',content:reply};
+  }catch(err){
+    if(err.name==='AbortError'){const arr=chatHistories[s.id];const last=arr[arr.length-1];if(last.loading)arr[arr.length-1]={role:'ai',content:'（已停止生成）'}}
+    else{const arr=chatHistories[s.id];arr[arr.length-1]={role:'ai',content:'抱歉，发生错误：'+err.message+'\n\n请稍后重试，或检查AI设置。',error:true}}
+  }
+  isGenerating=false;abortController=null;updateGenerateBtn();renderChat();renderSidebar();saveData();
+}
+
+async function callAI(messages,signal,sectionId,userText){
+  // 优先走后端代理（如果后端配了API Key）
+  try{
+    const healthRes=await fetch('/api/health');
+    const health=await healthRes.json();
+    if(health.aiConfigured){
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal,body:JSON.stringify({messages})});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||`API ${res.status}`)}
+      const d=await res.json();return d.content||'无回复内容';
+    }
+  }catch(e){if(e.name==='AbortError')throw e}
+
+  // 前端直连模式（用户在App内填了API Key）
+  const cfg=getApiConfig();
+  if(cfg.url&&cfg.key){
+    const res=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${cfg.key}`},signal,body:JSON.stringify({model:cfg.model||'gpt-4o-mini',messages,temperature:0.7,max_tokens:2000})});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`API ${res.status}`)}
+    const d=await res.json();return d.choices?.[0]?.message?.content||'无回复内容';
+  }
+
+  // 离线模式
+  return await callOffline(sectionId,userText);
+}
+
+async function callOffline(sectionId,userText){
+  await new Promise(r=>setTimeout(r,800+Math.random()*600)); // Simulate thinking
+  return OFFLINE_REPLIES[sectionId]?OFFLINE_REPLIES[sectionId](userText):OFFLINE_REPLIES.general(userText);
+}
+
+function updateGenerateBtn(){const b=document.getElementById('sendBtn');isGenerating?b.classList.add('generating'):b.classList.remove('generating')}
+function updateSendBtn(){const i=document.getElementById('msgInput'),b=document.getElementById('sendBtn'),t=i.value.trim();if(isGenerating||t){b.disabled=false;b.classList.remove('disabled')}else{b.disabled=true;b.classList.add('disabled')}}
+function autoResize(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,120)+'px'}
+document.getElementById('msgInput').addEventListener('input',function(){updateSendBtn();autoResize(this)});
+document.getElementById('msgInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});
+
+/* ========== Offline Reply Engine ========== */
+const OFFLINE_REPLIES={
+video:(t)=>`🎬 **视频创作助手**（离线模式）
+
+关于「${t}」，以下是一些通用建议：
+
+**热门短视频选题方向：**
+1. 港口/旅行第一视角漫步
+2. 美食探店+价格换算
+3. 船上生活日常 vlog
+4. 剪映教程/卡点教学
+5. 反差对比类（船上 vs 岸上）
+
+**剪辑技巧：**
+- 前3秒必须抓人（疑问/反差/美景）
+- 节奏感：快剪+卡点BGM
+- 字幕用大号粗体，中英双语
+
+**剪映操作提示：**
+- 卡点视频：导入音乐→自动踩点→对齐画面
+- 调色：先套滤镜再微调参数
+- 字幕：语音识别→手动校对→双语分两行
+
+> 💡 在「⚙️ AI设置」中填入API Key后可获得个性化脚本和文案。`,
+
+spanish:(t)=>`🇪🇸 **西语学习**（离线模式）
+
+关于「${t}」，以下是实用表达：
+
+**购物场景常用短句：**
+- ¿Cuánto cuesta?
+  音标：[ˈkwan.to ˈkwes.ta]
+  谐音：宽托 奎斯塔
+  意思：多少钱？
+
+- ¿Tiene...?
+  音标：[ˈtje.ne]
+  谐音：蒂耶内
+  意思：有...吗？
+
+- Más barato, por favor
+  音标：[mas βaˈɾa.to poɾ faˈβoɾ]
+  谐音：马斯 巴拉托 波尔 法沃尔
+  意思：便宜点，拜托
+
+- ¿Dónde está...?
+  音标：[ˈdon.de esˈta]
+  谐音：东德 埃斯塔
+  意思：...在哪里？
+
+**数字 1-10：**
+uno(乌诺) dos(多斯) tres(特雷斯) cuatro(夸特罗) cinco(辛科)
+seis(塞伊斯) siete(西耶特) ocho(奥乔) nueve(努埃韦) diez(迪耶斯)
+
+> 💡 在「⚙️ AI设置」中填入API Key后可获取完整场景对话练习。`,
+
+beauty:(t)=>`🌸 **香水科普**（离线模式）
+
+关于「${t}」，以下是基础知识：
+
+**香水前中后调解析：**
+- **前调（Top）**：喷后15分钟内，通常是柑橘、花草等轻盈香调
+- **中调（Heart）**：15分钟-1小时，主体香气，多为花卉、果香
+- **后调（Base）**：1小时后，留香最久，常见木质、麝香、琥珀
+
+**香奈儿经典香水：**
+1. **N°5**（女士）— 醛香花香调
+   前调：醛、柠檬、佛手柑
+   中调：茉莉、玫瑰、铃兰
+   后调：檀香、麝香、琥珀
+   适合：正式场合、经典永恒
+
+2. **Bleu de Chanel**（男士）— 木质芳香调
+   前调：柑橘、薄荷、粉胡椒
+   中调：雪松、肉豆蔻
+   后调：檀香、乳香、生姜
+   适合：日常通勤、商务
+
+3. **Coco Mademoiselle**（女士）— 东方花香调
+   前调：橙、佛手柑
+   中调：玫瑰、茉莉、荔枝
+   后调：广藿香、香根草、香草
+   适合：年轻女性、约会
+
+> 💡 在「⚙️ AI设置」中填入API Key后可获取更多品牌详细解析。`,
+
+food:(t)=>`🍳 **美食配方**（离线模式）
+
+关于「${t}」，这里有几个简单食谱参考：
+
+**番茄炒蛋（家常快手菜）**
+食材：鸡蛋3个、番茄2个
+调料：盐3g、糖5g、食用油15ml
+步骤：
+1. 鸡蛋打散加1g盐搅匀，番茄切块
+2. 热锅冷油，倒入蛋液炒至凝固盛出
+3. 锅中加少许油，放番茄翻炒出汁
+4. 加糖5g、盐2g调味
+5. 倒入鸡蛋翻匀，出锅
+⏱️ 时间：10分钟 | 难度：★☆☆
+
+**减脂鸡胸肉沙拉**
+食材：鸡胸肉150g、生菜、小番茄、黄瓜
+调料：橄榄油10ml、柠檬汁、黑胡椒、盐2g
+步骤：
+1. 鸡胸肉煮熟撕丝
+2. 蔬菜洗净切块
+3. 淋上调好的酱汁拌匀
+⏱️ 时间：15分钟 | 热量：约280大卡
+
+**葱油饼（简易版）**
+食材：面粉200g、温水110ml、葱花适量
+调料：盐3g、食用油20ml
+步骤：
+1. 面粉加温水和成光滑面团，醒20分钟
+2. 擀薄，刷油撒盐和葱花
+3. 卷起再擀圆
+4. 平底锅小火煎至两面金黄
+⏱️ 时间：40分钟 | 难度：★★☆
+
+> 💡 在「⚙️ AI设置」中填入API Key后可获取个性化食谱推荐。`,
+
+fitness:(t)=>`💪 **健身助手**（离线模式）
+
+关于「${t}」，以下是居家训练方案：
+
+**居家无器械全身计划：**
+1. **深蹲** 3×15次 — 臀腿
+   要点：膝盖不超脚尖，背部挺直，下蹲到大腿平行地面
+2. **俯卧撑** 3×12次 — 胸手臂
+   要点：身体成一条直线，下降到肘关节90°
+3. **平板支撑** 3×30秒 — 核心
+   要点：收腹，臀部不塌不翘，呼吸均匀
+4. **弓步蹲** 3×10次/腿 — 臀腿
+   要点：前膝不超脚尖，后膝接近地面不触地
+5. **臀桥** 3×15次 — 臀部
+   要点：顶峰收紧臀部停1秒，感受臀部发力
+6. **超人式** 3×12次 — 背部
+   要点：俯卧同时抬手脚，顶部停2秒
+
+**每日训练安排建议：**
+- 周一：臀部（深蹲+臀桥+弓步）
+- 周二：手臂胸（俯卧撑+钻石俯卧撑）
+- 周三：休息
+- 周四：背部核心（超人式+平板）
+- 周五：全身循环
+- 周末：休息或轻度拉伸
+
+⏱️ 每次20-30分钟 | 每组间休息30-60秒
+
+> 💡 在「⚙️ AI设置」中填入API Key后可生成个性化训练计划。`,
+
+english:(t)=>`🇬🇧 **English Learning**（离线模式）
+
+About "${t}", here are some useful expressions:
+
+**Workplace Communication:**
+- I'd like to schedule a follow-up meeting.
+  音标：[aɪd laɪk tuˈskɛdʒuːl əˈfɒloʊˌʌpˈmitɪŋ]
+  中文：我想安排一个后续会议。
+
+- Could you send me the summary by Friday?
+  音标：[kʊd juː sɛnd miː ðəˈsʌməri baɪˈfraɪdeɪ]
+  中文：能在周五前发我总结吗？
+
+- Let's circle back to this later.
+  音标：[lɛtsˈsɜːkəl bæk tuː ðɪsˈleɪtə]
+  中文：我们稍后再讨论这个。
+
+- I'll follow up with the team.
+  音标：[aɪlˈfɒloʊˌʌp wɪð ðə tiːm]
+  中文：我会跟团队跟进。
+
+**Travel English:**
+- Where is the boarding gate?
+  音标：[wɛər ɪz ðəˈbɔːrdɪŋ geɪt]
+  中文：登机口在哪里？
+
+- How much does it cost?
+  音标：[haʊ mʌtʃ dʌz ɪt kɒst]
+  中文：多少钱？
+
+> 💡 Connect AI API in Settings for full practice exercises.`,
+
+russian:(t)=>`🇷🇺 **俄语学习**（离线模式）
+
+关于「${t}」，以下是入门表达：
+
+**日常问候：**
+- Привет!
+  音标：[prʲɪˈvʲet]
+  谐音：普利维特
+  意思：你好！（非正式）
+
+- Здравствуйте!
+  音标：[zdrɑstˈvuj.tʲe]
+  谐音：兹德拉斯特维耶
+  意思：您好！（正式）
+
+- Спасибо
+  音标：[spɐˈsʲi.bə]
+  谐音：斯巴西巴
+  意思：谢谢
+
+- Извините
+  音标：[ɪzˈvʲinʲɪtʲe]
+  谐音：兹维尼捷
+  意思：对不起/打扰了
+
+**数字 1-10：**
+1 один(阿金) 2 два(德瓦) 3 три(特里) 4 четыре(切蒂列)
+5 пять(尼亚季) 6 шесть(谢斯季) 7 семь(谢姆) 8 восемь(沃谢姆)
+9 девять(杰维亚季) 10 десять(杰西亚季)
+
+**购物短句：**
+- Сколько стоит? — 多少钱？（斯科利科 斯托伊特）
+- Очень дорого. — 太贵了。（奥琴 多拉加）
+
+> 💡 在「⚙️ AI设置」中填入API Key后可获取完整场景对话。`,
+
+copywriting:(t)=>`✍️ **文案生成**（离线模式）
+
+关于「${t}」，以下是一些文案素材：
+
+**朋友圈唯美文案：**
+1. 生活不在别处，在此刻的每一帧里。
+2. 所有的远行，都是为了更好的归来。
+3. 把日子过成诗，不需要押韵。
+4. 海风带走了时间，带不走此刻的心情。
+5. 世界很大，我想去看看；世界很美，我想记下来。
+
+**短视频引导关注文案：**
+1. 「如果你也在路上，点个关注，我们一起走」
+2. 「更多港口故事，关注我不迷路」
+3. 「下期更精彩，别忘了关注哦」
+4. 「每天一个新发现，关注我一起探索」
+
+**小红书种草模板：**
+📍 地点 + ✨ 亮点 + 💰 价格 + 📌 攻略
+「终于来了！[地点]真的太好拍了，[亮点]，只要[价格]，攻略放在最后啦～」
+
+**节日借势模板：**
+「[节日]快乐！愿[祝福语]，就像[比喻]一样[感受]。」
+
+> 💡 在「⚙️ AI设置」中填入API Key后可生成个性化文案。`,
+
+stocks:(t)=>`📈 **股票资讯**（离线模式）
+
+关于「${t}」：
+
+**近期市场关注要点：**
+1. 美联储利率决议及货币政策走向
+2. 科技巨头财报季表现（AAPL/MSFT/GOOG/AMZN等）
+3. AI产业链相关公司动态（NVDA/AMD/AVGO等）
+4. 国际地缘政治对市场影响
+5. 美元指数与大宗商品走势
+
+**主要指数参考：**
+- 道琼斯工业平均指数（DJI）
+- 纳斯达克综合指数（IXIC）
+- 标普500指数（SPX）
+
+**信息获取渠道：**
+- https://finance.yahoo.com
+- https://www.cnbc.com
+- https://www.reuters.com/markets
+
+⚠️ **重要声明**：以上仅为信息整理，不构成任何投资建议。投资有风险，决策需谨慎。请咨询专业投资顾问。
+
+> 💡 在「⚙️ AI设置」中填入API Key后可获取实时资讯整理。`,
+
+general:(t)=>`收到你的消息：「${t}」
+
+当前工作台处于离线模式。每个板块都有专属的离线回复内容。
+
+💡 如需完整AI对话能力，请点击左下角「⚙️ AI设置」填入API Key。`
+};
+
+/* ========== Copy ========== */
+function copyMessage(btn,text){navigator.clipboard.writeText(text).then(()=>{showToast('复制成功');btn.textContent='✓';setTimeout(()=>{btn.textContent='复制'},1500)}).catch(()=>{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();try{document.execCommand('copy');showToast('复制成功')}catch(e){showToast('复制失败')}document.body.removeChild(t)})}
+
+/* ========== Clear ========== */
+function confirmClearChat(){const s=SECTIONS.find(x=>x.id===activeSectionId);showModal('🗑️',`清空「${s.name}」对话`,'确定要清空当前板块的所有聊天记录吗？此操作不可撤销。',()=>{chatHistories[s.id]=[];saveData();renderChat();renderSidebar();showToast('已清空当前对话')})}
+function confirmClearAll(){showModal('🗑️','清空全部对话','确定要清空所有板块的全部聊天记录和待办事项吗？此操作不可撤销。',()=>{chatHistories={};todoItems=[];saveData();renderMain();renderSidebar();showToast('已清空全部数据')})}
+
+/* ========== Modal ========== */
+function showModal(icon,title,desc,onConfirm){
+  const o=document.getElementById('modalOverlay');
+  document.getElementById('modalContent').innerHTML=`<div class="modal-icon">${icon}</div><div class="modal-title">${title}</div><div class="modal-desc">${desc}</div><div class="modal-buttons"><button class="modal-btn modal-btn-cancel" id="modalCancel">取消</button><button class="modal-btn modal-btn-confirm" id="modalConfirm">确定</button></div>`;
+  o.classList.add('active');document.getElementById('modalCancel').onclick=closeModal;document.getElementById('modalConfirm').onclick=()=>{closeModal();onConfirm()}
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active')}
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
+
+/* ========== Toast ========== */
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+
+/* ========== Todo ========== */
+function renderTodo(){
+  const a=document.getElementById('chatArea');let f=todoItems;
+  if(todoFilter==='active')f=todoItems.filter(t=>!t.done);
+  if(todoFilter==='done')f=todoItems.filter(t=>t.done);
+  a.innerHTML=`<div class="todo-container"><div class="todo-input-row"><input type="text" id="todoInput" placeholder="输入待办事项，按回车添加..." onkeydown="if(event.key==='Enter')addTodo()"><button class="todo-add-btn" onclick="addTodo()">添加</button></div><div class="todo-filters"><div class="todo-filter ${todoFilter==='all'?'active':''}" onclick="setTodoFilter('all')">全部 (${todoItems.length})</div><div class="todo-filter ${todoFilter==='active'?'active':''}" onclick="setTodoFilter('active')">待办 (${todoItems.filter(t=>!t.done).length})</div><div class="todo-filter ${todoFilter==='done'?'active':''}" onclick="setTodoFilter('done')">已完成 (${todoItems.filter(t=>t.done).length})</div></div><ul class="todo-list">${f.length===0?`<div class="todo-empty"><div class="todo-empty-icon">📝</div><div>${todoItems.length===0?'还没有待办事项，添加一个吧！':'没有符合条件的待办'}</div></div>`:f.map(t=>`<li class="todo-item ${t.done?'done':''}"><div class="todo-checkbox ${t.done?'checked':''}" onclick="toggleTodo('${t.id}')"></div><div class="todo-text">${escapeHtml(t.text)}</div><button class="todo-delete" onclick="deleteTodo('${t.id}')">🗑️</button></li>`).join('')}</ul></div>`;
+}
+function addTodo(){const i=document.getElementById('todoInput'),t=i.value.trim();if(!t)return;todoItems.unshift({id:'t'+Date.now(),text:t,done:false});saveData();renderTodo();renderSidebar();i.focus()}
+function toggleTodo(id){const t=todoItems.find(t=>t.id===id);if(t){t.done=!t.done;saveData();renderTodo();renderSidebar()}}
+function deleteTodo(id){todoItems=todoItems.filter(t=>t.id!==id);saveData();renderTodo();renderSidebar()}
+function setTodoFilter(f){todoFilter=f;renderTodo()}
+
+/* ========== Settings Modal ========== */
+function openSettings(){
+  const cfg=getApiConfig();
+  showModalRaw(`
+    <div class="modal-icon">⚙️</div>
+    <div class="modal-title">AI 对话设置</div>
+    <div class="modal-desc">配置后启用完整AI对话，不配置则使用离线模式。密钥仅存在本机，不上传任何服务器。</div>
+    <div class="form-group">
+      <label>API 端点 URL</label>
+      <input type="text" id="cfg_url" value="${cfg.url||''}" placeholder="https://api.openai.com/v1/chat/completions">
+      <div class="form-hint">任何 OpenAI 兼容端点均可</div>
+    </div>
+    <div class="form-group">
+      <label>API Key 密钥</label>
+      <input type="password" id="cfg_key" value="${cfg.key||''}" placeholder="sk-xxxxx">
+    </div>
+    <div class="form-group">
+      <label>模型名称</label>
+      <input type="text" id="cfg_model" value="${cfg.model||'gpt-4o-mini'}" placeholder="gpt-4o-mini">
+    </div>
+    <div class="form-group">
+      <label>快速预设</label>
+      <div class="preset-grid">
+        <button class="preset-btn" onclick="applyPreset('openai')">OpenAI</button>
+        <button class="preset-btn" onclick="applyPreset('deepseek')">DeepSeek</button>
+        <button class="preset-btn" onclick="applyPreset('zhipu')">智谱AI</button>
+        <button class="preset-btn" onclick="applyPreset('moonshot')">月之暗面</button>
+      </div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="clearApiConfig()">清除配置</button>
+      <button class="modal-btn modal-btn-confirm" onclick="saveConfig()">保存</button>
+    </div>
+  `);
+}
+
+function showModalRaw(html){
+  const o=document.getElementById('modalOverlay');
+  document.getElementById('modalContent').innerHTML=html;
+  o.classList.add('active');
+}
+
+function applyPreset(type){
+  const presets={
+    openai:{url:'https://api.openai.com/v1/chat/completions',model:'gpt-4o-mini'},
+    deepseek:{url:'https://api.deepseek.com/v1/chat/completions',model:'deepseek-chat'},
+    zhipu:{url:'https://open.bigmodel.cn/api/paas/v4/chat/completions',model:'glm-4-flash'},
+    moonshot:{url:'https://api.moonshot.cn/v1/chat/completions',model:'moonshot-v1-8k'}
+  };
+  const p=presets[type];if(!p)return;
+  document.getElementById('cfg_url').value=p.url;
+  document.getElementById('cfg_model').value=p.model;
+  showToast('已填入预设，请补充API Key');
+}
+
+function saveConfig(){
+  const url=document.getElementById('cfg_url').value.trim();
+  const key=document.getElementById('cfg_key').value.trim();
+  const model=document.getElementById('cfg_model').value.trim();
+  if(url&&!key){showToast('⚠️ 请填写API Key');return}
+  if(url&&key){saveApiConfig({url,key,model:model||'gpt-4o-mini'});showToast('✅ AI配置已保存');updateApiStatus()}
+  else{showToast('已切换到离线模式');updateApiConfig({});updateApiStatus()}
+  closeModal();
+}
+
+function clearApiConfig(){
+  localStorage.removeItem(API_KEY);
+  updateApiStatus();
+  closeModal();
+  showToast('已清除配置，切换到离线模式');
+}
+
+/* ========== Mobile Sidebar ========== */
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('active')}
+
+/* ========== PWA Install ========== */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;showInstallBanner()});
+function showInstallBanner(){
+  if(!deferredPrompt)return;
+  if(localStorage.getItem('install_dismissed')==='yes')return;
+  const b=document.createElement('div');
+  b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--pink-300);padding:12px 16px;display:flex;align-items:center;gap:12px;z-index:400;box-shadow:0 -2px 12px rgba(236,72,153,0.1)';
+  b.innerHTML=`<span style="font-size:24px">📲</span><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--pink-600)">安装到桌面</div><div style="font-size:11px;color:var(--text-muted)">像App一样使用，离线可用</div></div><button id="instYes" style="padding:8px 16px;background:var(--pink-500);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px">安装</button><button id="instNo" style="padding:8px 12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px">×</button>`;
+  document.body.appendChild(b);
+  document.getElementById('instYes').onclick=async()=>{deferredPrompt.prompt();const{outcome}=await deferredPrompt.userChoice;if(outcome==='accepted')showToast('✅ 安装成功');deferredPrompt=null;b.remove()};
+  document.getElementById('instNo').onclick=()=>{localStorage.setItem('install_dismissed','yes');b.remove()};
+}
+
+function showIOSHint(){
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  const isStandalone=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+  if(!isIOS||isStandalone)return;
+  if(localStorage.getItem('ios_hint_dismissed')==='yes')return;
+  setTimeout(()=>{
+    const h=document.createElement('div');
+    h.style.cssText='position:fixed;bottom:20px;left:16px;right:16px;background:var(--bg-card);border:1px solid var(--pink-300);border-radius:12px;padding:16px;z-index:400;box-shadow:var(--shadow-lg)';
+    h.innerHTML=`<div style="display:flex;align-items:start;gap:12px"><span style="font-size:28px">📲</span><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--pink-600);margin-bottom:6px">添加到主屏幕</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.5">点击 Safari 底部的 <b>分享按钮</b> ⬆️<br>选择 <b>「添加到主屏幕」</b><br>即可像App一样使用</div></div><button id="iosClose" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:0 4px">×</button></div>`;
+    document.body.appendChild(h);
+    document.getElementById('iosClose').onclick=()=>{localStorage.setItem('ios_hint_dismissed','yes');h.remove()};
+  },3000);
+}
+
+/* ========== SW Registration ========== */
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>console.log('SW registered')).catch(e=>console.log('SW failed',e))})}
+
+/* ========== Init ========== */
+loadTheme();loadData();renderSidebar();renderMain();updateApiStatus();showIOSHint();
+setTimeout(()=>{document.getElementById('loadingScreen').classList.add('hidden')},800);
+</script>
+</body>
+</html>

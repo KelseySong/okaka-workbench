@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: okaka-workbench
+    runtime: node
+    plan: free
+    buildCommand: ""
+    startCommand: node server.js
+    envVars:
+      - key: AI_API_URL
+        value: https://api.openai.com/v1/chat/completions
+      - key: AI_API_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: 18.17.0

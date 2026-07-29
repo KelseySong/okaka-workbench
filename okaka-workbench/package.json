@@ -1,0 +1,13 @@
+{
+  "name": "okaka-workbench",
+  "version": "1.0.0",
+  "description": "哦卡卡的工作台 - 个人AI助手",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
