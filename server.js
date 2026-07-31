@@ -82,14 +82,16 @@ const server = http.createServer(async (req, res) => {
         if (!apiRes.ok) {
           const errText = await apiRes.text().catch(() => '');
           console.error('AI API error:', apiRes.status, errText);
-          // Fallback to offline
+          // Return error info instead of silent offline fallback
           const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
           const userText = lastUserMsg ? lastUserMsg.content : '';
           const systemMsg = messages.find(m => m.role === 'system');
           const sectionId = extractSectionId(systemMsg?.content || '');
-          const reply = generateOfflineReply(sectionId, userText);
+          const offlineReply = generateOfflineReply(sectionId, userText);
+          // Append error diagnostic info
+          const errorMsg = `\n\n⚠️ **AI API 调试信息**\n- 状态码: ${apiRes.status}\n- 错误: ${errText.substring(0, 300)}\n- API URL: ${AI_API_URL}\n- Model: ${AI_MODEL}\n- Key前缀: ${AI_API_KEY.substring(0, 8)}...`;
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ content: reply, offline: true }));
+          res.end(JSON.stringify({ content: offlineReply + errorMsg, offline: true, apiError: true, errorStatus: apiRes.status, errorDetail: errText.substring(0, 500) }));
           return;
         }
 
