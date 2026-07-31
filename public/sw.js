@@ -1,8 +1,9 @@
-// Service Worker - 哦卡卡的工作台 PWA v7
-const CACHE_NAME = 'okaka-workbench-v7';
+// Service Worker - 哦卡卡的工作台 PWA v8
+const CACHE_NAME = 'okaka-workbench-v8';
 const ASSETS = [
   './',
   './index.html',
+  './redirect.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

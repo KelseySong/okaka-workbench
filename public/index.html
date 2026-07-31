@@ -353,17 +353,19 @@ function renderMessage(msg){
 function formatAIContent(text){
   let h=escapeHtml(text);
   // Step 1: Convert search links FIRST (before markdown formatting, so ** inside keywords don't become HTML tags)
-  // Douyin search: 🔍抖音搜索：关键词 → clickable link
+  // Douyin search: 🔍抖音搜索：关键词 → clickable button (via redirect page to escape PWA WebView)
   h=h.replace(/🔍\s*抖音搜索[：:](.+?)(?:\n|$)/g,(match,keyword)=>{
     const kw=keyword.trim();
-    const url='https://www.douyin.com/search/'+encodeURIComponent(kw);
-    return '<a href="'+url+'" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href);return false;" style="display:inline-block;padding:4px 12px;background:#000;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">🔍 抖音搜索：'+kw+'</a>';
+    const target='https://www.douyin.com/search/'+encodeURIComponent(kw);
+    const redirectUrl='./redirect.html?u='+encodeURIComponent(target);
+    return '<a href="'+redirectUrl+'" style="display:inline-block;padding:4px 12px;background:#000;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">🔍 抖音搜索：'+kw+'</a>';
   });
-  // Xiaohongshu search: 📕小红书搜索：关键词 → clickable link
+  // Xiaohongshu search: 📕小红书搜索：关键词 → clickable button
   h=h.replace(/📕\s*小红书搜索[：:](.+?)(?:\n|$)/g,(match,keyword)=>{
     const kw=keyword.trim();
-    const url='https://www.xiaohongshu.com/search_result?keyword='+encodeURIComponent(kw);
-    return '<a href="'+url+'" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href);return false;" style="display:inline-block;padding:4px 12px;background:#ff2442;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">📕 小红书搜索：'+kw+'</a>';
+    const target='https://www.xiaohongshu.com/search_result?keyword='+encodeURIComponent(kw);
+    const redirectUrl='./redirect.html?u='+encodeURIComponent(target);
+    return '<a href="'+redirectUrl+'" style="display:inline-block;padding:4px 12px;background:#ff2442;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">📕 小红书搜索：'+kw+'</a>';
   });
   // Step 2: Markdown formatting
   h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
@@ -371,8 +373,13 @@ function formatAIContent(text){
   h=h.replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>');
   h=h.replace(/^[\-] (.+)$/gm,'<li>$1</li>').replace(/^[*] (.+)$/gm,'<li>$1</li>').replace(/^\d+[\.)] (.+)$/gm,'<li>$1</li>');
   h=h.replace(/(<li>.*<\/li>)/s,'<ul>$1</ul>');h=h.replace(/<\/li>\n(<li>)/g,'</li><li>');
-  // Auto-detect URLs
-  h=h.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  // Auto-detect URLs (external links also go through redirect page)
+  h=h.replace(/(https?:\/\/[^\s<]+)/g,(match,url)=>{
+    if(url.includes('douyin.com')||url.includes('xiaohongshu.com')){
+      return '<a href="./redirect.html?u='+encodeURIComponent(url)+'" style="color:var(--pink-500);text-decoration:underline;">'+url+'</a>';
+    }
+    return '<a href="./redirect.html?u='+encodeURIComponent(url)+'" style="color:var(--pink-500);text-decoration:underline;">'+url+'</a>';
+  });
   h=h.replace(/\n/g,'<br>');h=h.replace(/<br>(<(h[1-3]|ul|ol|li))/g,'$1');h=h.replace(/(<\/(h[1-3]|ul|ol|li)>)<br>/g,'$1');
   return h;
 }
