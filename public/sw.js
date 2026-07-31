@@ -1,5 +1,5 @@
-// Service Worker - 哦卡卡的工作台 PWA v6
-const CACHE_NAME = 'okaka-workbench-v6';
+// Service Worker - 哦卡卡的工作台 PWA v7
+const CACHE_NAME = 'okaka-workbench-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -43,6 +43,13 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
+  // External domains (douyin, xiaohongshu, etc.) - do NOT intercept, let browser handle normally
+  if (url.hostname !== self.location.hostname &&
+      !url.hostname.includes('localhost') &&
+      !url.hostname.includes('127.0.0.1')) {
+    return;
+  }
+
   // AI API calls - always network, never cache
   if (event.request.url.includes('/v1/chat/completions') ||
       event.request.url.includes('/api/chat') ||
@@ -53,8 +60,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Everything else - NETWORK FIRST, cache fallback
-  // This ensures users always get the latest version
+  // Everything else (same-origin) - NETWORK FIRST, cache fallback
   event.respondWith(
     fetch(event.request).then(response => {
       if (response.ok) {

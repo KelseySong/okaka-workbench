@@ -357,13 +357,13 @@ function formatAIContent(text){
   h=h.replace(/🔍\s*抖音搜索[：:](.+?)(?:\n|$)/g,(match,keyword)=>{
     const kw=keyword.trim();
     const url='https://www.douyin.com/search/'+encodeURIComponent(kw);
-    return '<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-block;padding:4px 12px;background:#000;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">🔍 抖音搜索：'+kw+'</a>';
+    return '<a href="'+url+'" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href);return false;" style="display:inline-block;padding:4px 12px;background:#000;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">🔍 抖音搜索：'+kw+'</a>';
   });
   // Xiaohongshu search: 📕小红书搜索：关键词 → clickable link
   h=h.replace(/📕\s*小红书搜索[：:](.+?)(?:\n|$)/g,(match,keyword)=>{
     const kw=keyword.trim();
     const url='https://www.xiaohongshu.com/search_result?keyword='+encodeURIComponent(kw);
-    return '<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-block;padding:4px 12px;background:#ff2442;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">📕 小红书搜索：'+kw+'</a>';
+    return '<a href="'+url+'" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href);return false;" style="display:inline-block;padding:4px 12px;background:#ff2442;color:#fff;border-radius:12px;font-size:13px;text-decoration:none;margin:3px 0;font-weight:500;">📕 小红书搜索：'+kw+'</a>';
   });
   // Step 2: Markdown formatting
   h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
