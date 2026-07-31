@@ -1,5 +1,5 @@
-// Service Worker - 哦卡卡的工作台 PWA v2
-const CACHE_NAME = 'okaka-workbench-v2';
+// Service Worker - 哦卡卡的工作台 PWA v3
+const CACHE_NAME = 'okaka-workbench-v3';
 const ASSETS = [
   './',
   './index.html',
