@@ -168,7 +168,8 @@ function extractSectionId(systemPrompt) {
     '英文学习': 'english',
     '俄语': 'russian',
     '文案': 'copywriting',
-    '股票': 'stocks'
+    '股票': 'stocks',
+    '热点二创': 'trending'
   };
   for (const [key, id] of Object.entries(map)) {
     if (systemPrompt.includes(key)) return id;
@@ -351,6 +352,24 @@ About "${userText}", here are some useful expressions:
 ⚠️ **重要声明**：以上仅为信息整理，不构成任何投资建议。投资有风险，决策需谨慎。
 
 > 💡 连接 AI API 后可获取实时资讯整理。`,
+
+    trending: `🔥 **热点二创**（离线模式）
+
+我注意到你问了关于「${userText}」的问题。当前处于离线模式，以下是通用二创思路：
+
+**常青热点类型（适合随时二创）：**
+1. 反差对比类 — 船上 vs 岸上、预期 vs 现实
+2. 第一视角漫步 — 港口街头沉浸式
+3. 价格换算类 — 当地物价折算成人民币
+4. 文化碰撞类 — 语言误会/习俗差异
+5. 职业揭秘类 — 海员的一天
+
+**二创选题方案：**
+1. 「船员眼中的XX港」— 用你的视角拍当地地标
+2. 「XX港物价大揭秘」— 探店+价格换算
+3. 「海上 vs 陆上」— 对比剪辑，BGM卡点
+
+> 💡 连接 AI API 后可获取实时热点追踪和个性化二创方案。`,
 
     general: `收到你的消息：「${userText}」
 
